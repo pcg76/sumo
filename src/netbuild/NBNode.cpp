@@ -904,20 +904,15 @@ NBNode::removeJoinedTrafficLights() {
     }
 }
 
+
 void
-NBNode::computeLogic(const NBEdgeCont& ec, OptionsCont& oc) {
+NBNode::computeLogic(const NBEdgeCont& ec) {
     delete myRequest; // possibly recomputation step
     myRequest = nullptr;
     if (myIncomingEdges.size() == 0 || myOutgoingEdges.size() == 0) {
         // no logic if nothing happens here
         myType = NODETYPE_DEAD_END;
         removeJoinedTrafficLights();
-        return;
-    }
-    // check whether the node was set to be unregulated by the user
-    if (oc.getBool("keep-nodes-unregulated") || oc.isInStringVector("keep-nodes-unregulated.explicit", getID())
-            || (oc.getBool("keep-nodes-unregulated.district-nodes") && (isNearDistrict() || isDistrict()))) {
-        myType = NODETYPE_NOJUNCTION;
         return;
     }
     // compute the logic if necessary or split the junction
@@ -2173,24 +2168,10 @@ NBNode::isNearDistrict() const {
     if (isDistrict()) {
         return false;
     }
-    EdgeVector edges;
-    copy(getIncomingEdges().begin(), getIncomingEdges().end(),
-         back_inserter(edges));
-    copy(getOutgoingEdges().begin(), getOutgoingEdges().end(),
-         back_inserter(edges));
-    for (EdgeVector::const_iterator j = edges.begin(); j != edges.end(); ++j) {
-        NBEdge* t = *j;
-        NBNode* other = nullptr;
-        if (t->getToNode() == this) {
-            other = t->getFromNode();
-        } else {
-            other = t->getToNode();
-        }
-        EdgeVector edges2;
-        copy(other->getIncomingEdges().begin(), other->getIncomingEdges().end(), back_inserter(edges2));
-        copy(other->getOutgoingEdges().begin(), other->getOutgoingEdges().end(), back_inserter(edges2));
-        for (EdgeVector::const_iterator k = edges2.begin(); k != edges2.end(); ++k) {
-            if ((*k)->getFromNode()->isDistrict() || (*k)->getToNode()->isDistrict()) {
+    for (const NBEdge* const t : getEdges()) {
+        const NBNode* const other = t->getToNode() == this ? t->getFromNode() : t->getToNode();
+        for (const NBEdge* const k : other->getEdges()) {
+            if (k->getFromNode()->isDistrict() || k->getToNode()->isDistrict()) {
                 return true;
             }
         }

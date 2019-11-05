@@ -61,6 +61,8 @@ extrapolated based on edge-lengths and maximum speeds multiplied with --speed-fa
     optParser.add_option("-v", "--verbose", action="store_true",
                          default=False, help="Give more output")
     optParser.add_option("--trips-output", help="output trip file")
+    optParser.add_option("--pt-input", help="read public transport flows from file")
+    optParser.add_option("--pt-output", help="write reduced public transport flows to file")
     optParser.add_option("--min-length", type='int', dest="min_length",
                          default=0, help="minimum route length in the subnetwork (in #edges)")
     optParser.add_option("--min-air-dist", type='int', dest="min_air_dist",
@@ -78,7 +80,7 @@ extrapolated based on edge-lengths and maximum speeds multiplied with --speed-fa
     optParser.add_option("-b", "--big", action="store_true", default=False,
                          help="Perform out-of-memory sort using module sort_routes (slower but more memory efficient)")
     optParser.add_option("-d", "--disconnected-action", type='choice', default='discard',
-                         choices=['discard', 'keep'],  # XXX 'split', 'longest'
+                         choices=['discard', 'keep', "keep.walk"],  # XXX 'split', 'longest'
                          help="How to deal with routes that are disconnected in the subnetwork. If 'keep' is chosen " +
                               "a disconnected route generates several routes in the subnetwork corresponding to " +
                               "its parts.")
@@ -119,18 +121,18 @@ def hasMinLength(fromIndex, toIndex, edges, orig_net, options):
     return True
 
 
-def cutEdgeList(areaEdges, oldDepart, exitTimes, edges, orig_net, options, stats):
+def _cutEdgeList(areaEdges, oldDepart, exitTimes, edges, orig_net, options, stats, disconnected_action):
     firstIndex = getFirstIndex(areaEdges, edges)
     if firstIndex is None:
         return []  # route does not touch the area
     lastIndex = len(edges) - 1 - getFirstIndex(areaEdges, reversed(edges))
     # check for connectivity
     route_parts = [(firstIndex + i, firstIndex + j)
-                    for i, j in missingEdges(areaEdges, edges[firstIndex:(lastIndex + 1)],
-                                             stats.missingEdgeOccurences)]
+                   for i, j in missingEdges(areaEdges, edges[firstIndex:(lastIndex + 1)],
+                                            stats.missingEdgeOccurences)]
     if len(route_parts) > 1:
         stats.multiAffectedRoutes += 1
-        if options.disconnected_action == 'discard':
+        if disconnected_action == 'discard':
             return []
     # loop over different route parts
     result = []
@@ -143,9 +145,9 @@ def cutEdgeList(areaEdges, oldDepart, exitTimes, edges, orig_net, options, stats
             if orig_net is not None:
                 # extrapolate new departure using default speed
                 newDepart = (float(oldDepart) +
-                                sum([(orig_net.getEdge(e).getLength() /
-                                    (orig_net.getEdge(e).getSpeed() * options.speed_factor))
-                                    for e in edges[:fromIndex]]))
+                             sum([(orig_net.getEdge(e).getLength() /
+                                   (orig_net.getEdge(e).getSpeed() * options.speed_factor))
+                                  for e in edges[:fromIndex]]))
             else:
                 newDepart = float(oldDepart)
         else:
@@ -159,7 +161,7 @@ def cutEdgeList(areaEdges, oldDepart, exitTimes, edges, orig_net, options, stats
     return result
 
 
-def cut_routes(aEdges, orig_net, options, busStopEdges=None):
+def cut_routes(aEdges, orig_net, options, busStopEdges=None, finalEdgeMap=None):
     areaEdges = set(aEdges)
     stats = Statistics()
     standaloneRoutes = {}  # routeID -> routeObject
@@ -184,23 +186,42 @@ def cut_routes(aEdges, orig_net, options, busStopEdges=None):
                 newPlan = []
                 for planItem in moving.getChildList():
                     if planItem.name == "walk":
-                        routeParts = cutEdgeList(areaEdges, oldDepart, None,
-                                                 planItem.edges.split(), orig_net, options, stats)
-                        print(planItem, routeParts)
+                        disco = "keep" if options.disconnected_action == "keep.walk" else options.disconnected_action
+                        routeParts = _cutEdgeList(areaEdges, oldDepart, None,
+                                                  planItem.edges.split(), orig_net, options, stats, disco)
+                        if busStopEdges.get(planItem.busStop) not in areaEdges:
+                            planItem.busStop = None
+                        walkEdges = []
                         for depart, edges in routeParts:
                             if newDepart is None:
                                 newDepart = depart
-                            walk = copy.deepcopy(planItem)
-                            walk.edges = " ".join(edges)
-                            newPlan.append(walk)
-                            remaining.update(edges)
+                            walkEdges += edges
+                        if walkEdges:
+                            remaining.update(walkEdges)
+                            planItem.edges = " ".join(walkEdges)
+                            newPlan.append(planItem)
+                    elif planItem.name == "ride":
+                        keep = True
+                        if busStopEdges.get(planItem.busStop) not in areaEdges:
+                            if planItem.lines in finalEdgeMap:
+                                planItem.busStop = None
+                                planItem.setAttribute("to", finalEdgeMap[planItem.lines])
+                            else:
+                                keep = False
+                        if newDepart is None:
+                            newDepart = float(planItem.depart)
+                            planItem.lines = planItem.intended
+                        if keep:
+                            newPlan.append(planItem)
+                        if planItem.to:
+                            break
                     else:
                         newPlan.append(planItem)
+                moving.setChildList(newPlan)
                 cut_stops(moving, busStopEdges, remaining)
-                if not newPlan:
+                if not moving.getChildList():
                     continue
                 moving.depart = "%.2f" % newDepart
-                moving.setChildList(newPlan)
                 yield newDepart, moving
             else:
                 if moving.name == 'vehicle':
@@ -214,7 +235,7 @@ def cut_routes(aEdges, orig_net, options, busStopEdges=None):
                     routeRef = None
                 else:
                     newDepart = standaloneRoutesDepart.get(moving.route)
-                    if newDepart is 'discard':
+                    if newDepart == 'discard':
                         # route was already checked and discarded
                         continue
                     elif newDepart is not None:
@@ -230,11 +251,12 @@ def cut_routes(aEdges, orig_net, options, busStopEdges=None):
                         continue
                     else:
                         old_route = routeRef = standaloneRoutes[moving.route]
-                routeParts = cutEdgeList(areaEdges, oldDepart, old_route.exitTimes,
-                                        old_route.edges.split(), orig_net, options, stats)
+                routeParts = _cutEdgeList(areaEdges, oldDepart, old_route.exitTimes,
+                                          old_route.edges.split(), orig_net, options,
+                                          stats, options.disconnected_action)
                 if routeParts and old_route.exitTimes is None and orig_net is None:
                     print("Could not reconstruct new departure time for %s '%s'. Using old departure time." %
-                            (moving.name, moving.id))
+                          (moving.name, moving.id))
                 old_route.exitTimes = None
                 if routeRef and not routeParts:
                     standaloneRoutesDepart[moving.route] = 'discard'
@@ -250,11 +272,11 @@ def cut_routes(aEdges, orig_net, options, busStopEdges=None):
                         yield -1, routeRef
                     else:
                         old_route.edges = " ".join(remaining)
-                    if moving.name == 'flow':
-                        moving.begin = "%.2f" % newDepart
-                        moving.end = "%.2f" % (newDepart - float(oldDepart))
-                    else:
+                    if moving.name == 'vehicle':
                         moving.depart = "%.2f" % newDepart
+                    else:
+                        moving.begin = "%.2f" % newDepart
+                        moving.end = "%.2f" % (newDepart - float(oldDepart) + float(moving.end))
                     if len(routeParts) > 1:
                         # return copies of the vehicle for each route part
                         yield_mov = copy.deepcopy(moving)
@@ -443,15 +465,34 @@ def main(options):
         else:
             print("Wrote nothing")
 
+    finalEdgeMap = None
+    if options.pt_input:
+        allRouteFiles = options.routeFiles
+        options.routeFiles = [options.pt_input]
+        finalRouteEdge = {}
+        finalEdgeMap = {}
+        with open(options.pt_output if options.pt_output else options.pt_input + ".cut", 'w') as f:
+            writeHeader(f, os.path.basename(__file__), 'routes')
+            for _, v in cut_routes(edges, orig_net, options, busStopEdges):
+                f.write(v.toXML('    '))
+                if v.name == "route":
+                    finalRouteEdge[v.id] = v.edges.split()[-1]
+                elif isinstance(v.route, list):
+                    finalEdgeMap[v.line] = v.route[0].edges.split()[-1]
+                elif v.route is not None:
+                    finalEdgeMap[v.line] = finalRouteEdge[v.route]
+            f.write('</routes>\n')
+        options.routeFiles = allRouteFiles
+
     if options.big:
         # write output unsorted
         tmpname = options.output + ".unsorted"
         with open(tmpname, 'w') as f:
-            write_to_file(cut_routes(edges, orig_net, options, busStopEdges), f)
+            write_to_file(cut_routes(edges, orig_net, options, busStopEdges, finalEdgeMap), f)
         # sort out of memory
         sort_routes.main([tmpname, '--big', '--outfile', options.output])
     else:
-        routes = list(cut_routes(edges, orig_net, options, busStopEdges))
+        routes = list(cut_routes(edges, orig_net, options, busStopEdges, finalEdgeMap))
         routes.sort(key=lambda v: v[0])
         with open(options.output, 'w') as f:
             write_to_file(routes, f)

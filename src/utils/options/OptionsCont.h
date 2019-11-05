@@ -490,37 +490,22 @@ public:
      */
     const IntVector& getIntVector(const std::string& name) const;
 
-    /** @brief Returns the list of double-value of the named option (only for Option_FloatVector)
+    /** @brief Returns the list of string-value of the named option (only for Option_StringVector)
      *
-     * This method returns the float-vector-value of an existing float-vector-option.
-     * If the named option does not exist or is not a float-vector-option, an
+     * This method returns the string-vector-value of an existing string-vector-option.
+     * If the named option does not exist or is not a string-vector-option, an
      *  InvalidArgument is thrown.
      *
-     * @param[in] name The name of the option to return the float-vector-value of
-     * @return The float-vector-value of the named, existing float-vector-option
-     * @exception InvalidArgument If the option does not exist or is not a float-vector-option
-     */
-    const FloatVector& getFloatVector(const std::string& name) const;
-
-
-    /** @brief Returns the list of string-vector-value of the named option (only for Option_String)
-     *
-     * This method returns the string-vector-value of an existing string-option.
-     * If the named option does not exist or is not a string-option, an
-     *  InvalidArgument is thrown.
-     *
-     * The string-value is determined, first. If the legacy-divider ';' is found
-     *  within the string, a warning is generated. The retrieved string is splitted
-     *  at ',' and ';'.
+     * If the legacy-divider ';' is found within the string, a warning is generated.
+     * The retrieved string is only splitted at ','.
      *
      * @param[in] name The name of the option to return the string-vector-value of
-     * @return The string-vector-value of the named, existing string-option
-     * @exception InvalidArgument If the option does not exist or is not a string-option
+     * @return The string-vector-value of the named, existing string-vector-option
+     * @exception InvalidArgument If the option does not exist or is not a string-vector-option
      * @todo Is it possible to retrieve a const-reference of the string?
      * @see getString()
      */
-    std::vector<std::string> getStringVector(const std::string& name) const;
-
+    const StringVector& getStringVector(const std::string& name) const;
 
     /** @brief Returns the named option is a list of string values containing the specified item
      *
@@ -540,7 +525,7 @@ public:
      * @todo Try to optimize - at each call, the vector is rebuilt
      */
     bool isInStringVector(const std::string& optionName,
-                          const std::string& itemName);
+                          const std::string& itemName) const;
     /// @}
 
 

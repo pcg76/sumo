@@ -252,11 +252,13 @@ GNELoadThread::fillOptions(OptionsCont& oc) {
     oc.doRegister("registry-viewport", new Option_Bool(false));
     oc.addDescription("registry-viewport", "Visualisation", "Load current viewport from registry");
 
-    oc.doRegister("window-size", new Option_String());
+    oc.doRegister("window-size", new Option_StringVector());
     oc.addDescription("window-size", "Visualisation", "Create initial window with the given x,y size");
 
-    oc.doRegister("window-pos", new Option_String());
+    oc.doRegister("window-pos", new Option_StringVector());
     oc.addDescription("window-pos", "Visualisation", "Create initial window at the given x,y position");
+
+    // testing
 
     oc.doRegister("gui-testing", new Option_Bool(false));
     oc.addDescription("gui-testing", "Visualisation", "Enable overlay for screen recognition");
@@ -266,6 +268,9 @@ GNELoadThread::fillOptions(OptionsCont& oc) {
 
     oc.doRegister("gui-testing-debug-gl", new Option_Bool(false));
     oc.addDescription("gui-testing-debug-gl", "Visualisation", "Enable output messages during GUI-Testing specific of gl functions");
+
+    oc.doRegister("gui-testing.setting-output", new Option_FileName());
+    oc.addDescription("gui-testing.setting-output", "Visualisation", "Save gui settings in the given settings-output file");
 
     // register the simulation settings (needed for GNERouteHandler)
     oc.doRegister("begin", new Option_String("0", "TIME"));

@@ -817,13 +817,11 @@ TraCIAPI::EdgeScope::setEffort(const std::string& edgeID, double effort, double 
 void
 TraCIAPI::EdgeScope::setMaxSpeed(const std::string& edgeID, double speed) const {
     tcpip::Storage content;
-	content.writeUnsignedByte(libsumo::TYPE_DOUBLE);
+    content.writeByte(libsumo::TYPE_DOUBLE);
     content.writeDouble(speed);
     myParent.createCommand(libsumo::CMD_SET_EDGE_VARIABLE, libsumo::VAR_MAXSPEED, edgeID, &content);
     myParent.processSet(libsumo::CMD_SET_EDGE_VARIABLE);
 }
-
-
 
 
 // ---------------------------------------------------------------------------
@@ -1858,6 +1856,25 @@ TraCIAPI::SimulationScope::findRoute(const std::string& fromEdge, const std::str
 	content.writeInt(routingMode);
 	return myParent.getTraCIStage(libsumo::CMD_GET_SIM_VARIABLE, libsumo::FIND_ROUTE, "", &content);
 }
+
+libsumo::TraCIStage
+TraCIAPI::SimulationScope::findRoute(const std::string& fromEdge, const std::string& toEdge, const std::string& vType, double pos, int routingMode) const {
+    tcpip::Storage content;
+    content.writeByte(libsumo::TYPE_COMPOUND);
+    content.writeInt(5);
+    content.writeUnsignedByte(libsumo::TYPE_STRING);
+    content.writeString(fromEdge);
+    content.writeUnsignedByte(libsumo::TYPE_STRING);
+    content.writeString(toEdge);
+    content.writeUnsignedByte(libsumo::TYPE_STRING);
+    content.writeString(vType);
+    content.writeUnsignedByte(libsumo::TYPE_DOUBLE);
+    content.writeDouble(pos);
+    content.writeUnsignedByte(libsumo::TYPE_INTEGER);
+    content.writeInt(routingMode);
+    return myParent.getTraCIStage(libsumo::CMD_GET_SIM_VARIABLE, libsumo::FIND_ROUTE, "", &content);
+}
+
 
 // ---------------------------------------------------------------------------
 // TraCIAPI::TrafficLightScope-methods

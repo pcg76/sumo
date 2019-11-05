@@ -294,6 +294,12 @@ GNEDetectorE3::checkAdditionalChildRestriction() const {
 }
 
 
+bool 
+GNEDetectorE3::isAttributeEnabled(SumoXMLAttr /* key */) const {
+    return true;
+}
+
+
 std::string
 GNEDetectorE3::getPopUpID() const {
     return getTagStr() + ":" + getID();

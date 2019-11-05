@@ -19,11 +19,9 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-import os
 import sys
-import optparse
 
-from runnerlib import get_options, printToCParams, requestToC  # sys.path modification is done there
+from runnerlib import get_options, printToCParams  # sys.path modification is done there
 import traci
 from sumolib import checkBinary
 

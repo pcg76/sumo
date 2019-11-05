@@ -673,7 +673,7 @@ bool
 GNEPoly::isValid(SumoXMLAttr key, const std::string& value) {
     switch (key) {
         case SUMO_ATTR_ID:
-            return SUMOXMLDefinitions::isValidNetID(value) && (myNet->retrievePolygon(value, false) == nullptr);
+            return SUMOXMLDefinitions::isValidTypeID(value) && (myNet->retrievePolygon(value, false) == nullptr);
         case SUMO_ATTR_SHAPE:
         case SUMO_ATTR_GEOSHAPE:
             // empty shapes AREN'T allowed
@@ -734,6 +734,16 @@ GNEPoly::isValid(SumoXMLAttr key, const std::string& value) {
             return Parameterised::areParametersValid(value);
         default:
             throw InvalidArgument(getTagStr() + " doesn't have an attribute of type '" + toString(key) + "'");
+    }
+}
+
+bool 
+GNEPoly::isAttributeEnabled(SumoXMLAttr /* key */) const {
+    // check if we're in supermode Network
+    if (myNet->getViewNet()->getEditModes().currentSupermode == GNE_SUPERMODE_NETWORK) {
+        return true;
+    } else {
+        return false;
     }
 }
 

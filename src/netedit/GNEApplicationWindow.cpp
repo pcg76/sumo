@@ -1677,6 +1677,11 @@ GNEApplicationWindow::getToolbarsGrip() {
 
 void
 GNEApplicationWindow::closeAllWindows() {
+    // check if view has to be saved
+    if (myViewNet) {
+        myViewNet->saveVisualizationSettings();
+    }
+    // lock tracker
     myTrackerLock.lock();
     // remove trackers and other external windows
     while (!myGLWindows.empty()) {
@@ -1692,6 +1697,7 @@ GNEApplicationWindow::closeAllWindows() {
     setTitle(myTitlePrefix);
     // add a separator to the log
     myMessageWindow->addSeparator();
+    // unlock tracker
     myTrackerLock.unlock();
     // remove coordinate information
     myGeoCoordinate->setText("N/A");
@@ -2412,8 +2418,21 @@ GNEApplicationWindow::onCmdToogleEditOptions(FXObject* obj, FXSelector sel, void
             }
             // Call manually onCmdToogleHideNonInspecteDemandElements
             return myViewNet->onCmdToogleHideNonInspecteDemandElements(obj, sel, ptr);
+        } else if (visibleMenuCommands.at(numericalKeyPressed) == myViewNet->getDemandViewOptions().menuCheckLockPerson) {
+            // Toogle menuCheckShowAllPersonPlans
+            if (myViewNet->getDemandViewOptions().menuCheckLockPerson->getCheck() == TRUE) {
+                myViewNet->getDemandViewOptions().menuCheckLockPerson->setCheck(FALSE);
+                // show extra information for tests
+                WRITE_DEBUG("Disabled lock person plan throught alt + " + toString(numericalKeyPressed + 1));
+            } else {
+                myViewNet->getDemandViewOptions().menuCheckLockPerson->setCheck(TRUE);
+                // show extra information for tests
+                WRITE_DEBUG("Enabled lock person plan throught alt + " + toString(numericalKeyPressed + 1));
+            }
+            // Call manually onCmdToogleHideNonInspecteDemandElements
+            return myViewNet->onCmdToogleLockPerson(obj, sel, ptr);
         } else {
-            // nothing to call
+            // nothing to toogle
             return 1;
         }
     }

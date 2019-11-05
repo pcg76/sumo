@@ -79,10 +79,10 @@ GNERoute::GNERoutePopupMenu::onCmdApplyDistance(FXObject*, FXSelector, void*) {
 
 GNERoute::GNERoute(GNEViewNet* viewNet) :
     GNEDemandElement(viewNet->getNet()->generateDemandElementID("", SUMO_TAG_ROUTE), viewNet, GLO_ROUTE, SUMO_TAG_ROUTE,
-{}, {}, {}, {}, {}, {}, {}, {}, {}, {}),
-Parameterised(),
-myColor(RGBColor::YELLOW),
-myVClass(SVC_PASSENGER) {
+                     {}, {}, {}, {}, {}, {}, {}, {}, {}, {}),
+    Parameterised(),
+    myColor(RGBColor::YELLOW),
+    myVClass(SVC_PASSENGER) {
 }
 
 

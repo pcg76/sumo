@@ -165,6 +165,7 @@ GUIDialog_ViewSettings::GUIDialog_ViewSettings(GUISUMOAbstractView* parent, GUIV
         myLaneColorSettingFrame = new FXVerticalFrame(frame22, GUIDesignViewSettingsVerticalFrame4);
         myParamKey = new FXComboBox(m21, 1, this, MID_SIMPLE_VIEW_COLORCHANGE, GUIDesignComboBoxStatic);
         myParamKey->disable();
+        myParamKey->setEditable(true);
 
         // rainbow settings
         FXMatrix* m24 = new FXMatrix(frame22, 3, GUIDesignViewSettingsMatrix3);
@@ -252,48 +253,51 @@ GUIDialog_ViewSettings::GUIDialog_ViewSettings(GUISUMOAbstractView* parent, GUIV
 
         new FXHorizontalSeparator(frame3, GUIDesignHorizontalSeparator);
 
-        FXMatrix* m32 = new FXMatrix(frame3, 3, GUIDesignViewSettingsMatrix3);
+        FXMatrix* m32 = new FXMatrix(frame3, 4, GUIDesignViewSettingsMatrix3);
         new FXLabel(m32, "Color", nullptr, GUIDesignViewSettingsLabel1);
         myVehicleColorMode = new MFXIconComboBox(m32, 20, this, MID_SIMPLE_VIEW_COLORCHANGE, GUIDesignComboBoxStatic);
         mySettings->vehicleColorer.fill(*myVehicleColorMode);
         myVehicleColorMode->setNumVisible((int)mySettings->vehicleColorer.size());
         myVehicleColorInterpolation = new FXCheckButton(m32, "Interpolate", this, MID_SIMPLE_VIEW_COLORCHANGE, GUIDesignCheckButtonViewSettings);
+        myVehicleParamKey = new FXComboBox(m32, 1, this, MID_SIMPLE_VIEW_COLORCHANGE, GUIDesignComboBoxStatic);
+        myVehicleParamKey->setEditable(true);
+        myVehicleParamKey->disable();
 
         myVehicleColorSettingFrame = new FXVerticalFrame(frame3, GUIDesignViewSettingsVerticalFrame4);
 
         new FXHorizontalSeparator(frame3, GUIDesignHorizontalSeparator);
 
+        FXMatrix* m35 = new FXMatrix(frame3, 2, GUIDesignMatrixViewSettings);
+        myVehicleNamePanel = new NamePanel(m35, this, "Show vehicle name", mySettings->vehicleName);
+        myVehicleValuePanel = new NamePanel(m35, this, "Show vehicle color value", mySettings->vehicleValue);
+        myVehicleTextPanel = new NamePanel(m35, this, "Show vehicle text param", mySettings->vehicleText);
+        myVehicleTextParamKey = new FXComboBox(myVehicleTextPanel->myMatrix0, 1, this, MID_SIMPLE_VIEW_COLORCHANGE, GUIDesignComboBoxStatic);
+        myVehicleTextParamKey->setEditable(true);
+
+        //new FXHorizontalSeparator(frame3, GUIDesignHorizontalSeparator);
+
         FXMatrix* m33 = new FXMatrix(frame3, 2, GUIDesignMatrixViewSettings);
         myShowBlinker = new FXCheckButton(m33, "Show blinker / brake lights", this, MID_SIMPLE_VIEW_COLORCHANGE);
         myShowBlinker->setCheck(mySettings->showBlinker);
-        new FXLabel(m33, " ", nullptr, GUIDesignViewSettingsLabel1);
         myShowMinGap = new FXCheckButton(m33, "Show minimum gap", this, MID_SIMPLE_VIEW_COLORCHANGE);
         myShowMinGap->setCheck(mySettings->drawMinGap);
-        new FXLabel(m33, " ", nullptr, GUIDesignViewSettingsLabel1);
         myShowBrakeGap = new FXCheckButton(m33, "Show brake gap", this, MID_SIMPLE_VIEW_COLORCHANGE);
         myShowBrakeGap->setCheck(mySettings->drawBrakeGap);
-        new FXLabel(m33, " ", nullptr, GUIDesignViewSettingsLabel1);
         myShowBTRange = new FXCheckButton(m33, "Show Bluetooth range", this, MID_SIMPLE_VIEW_COLORCHANGE);
         myShowBTRange->setCheck(mySettings->showBTRange);
+        myShowRouteIndex = new FXCheckButton(m33, "Show route index", this, MID_SIMPLE_VIEW_COLORCHANGE);
+        myShowRouteIndex->setCheck(mySettings->showRouteIndex);
         new FXLabel(m33, " ", nullptr, GUIDesignViewSettingsLabel1);
-        /*
-        myShowLaneChangePreference = new FXCheckButton(m33, "Show lane change preference", this, MID_SIMPLE_VIEW_COLORCHANGE);
-        myShowLaneChangePreference->setCheck(mySettings->drawLaneChangePreference);
-        new FXLabel(m33, " ", 0, GUIDesignViewSettingsLabel1);
-        */
-        myVehicleNamePanel = new NamePanel(m33, this, "Show vehicle name", mySettings->vehicleName);
-        myVehicleValuePanel = new NamePanel(m33, this, "Show vehicle color value", mySettings->vehicleValue);
-        /*
-        FXCheckButton *tmpc = new FXCheckButton(m33, "Show braking lights", 0 ,0);
-        tmpc->disable();
-        tmpc = new FXCheckButton(m33, "Show needed headway", 0 ,0);
-        tmpc->disable();
-        */
+        //myShowLaneChangePreference = new FXCheckButton(m33, "Show lane change preference", this, MID_SIMPLE_VIEW_COLORCHANGE);
+        //myShowLaneChangePreference->setCheck(mySettings->drawLaneChangePreference);
+        //tmpc = new FXCheckButton(m33, "Show needed headway", 0 ,0);
+        //tmpc->disable();
 
-        new FXHorizontalSeparator(frame3, GUIDesignHorizontalSeparator);
+        //new FXHorizontalSeparator(frame3, GUIDesignHorizontalSeparator);
 
         FXMatrix* m34 = new FXMatrix(frame3, 2, GUIDesignViewSettingsMatrix1);
         myVehicleSizePanel = new SizePanel(m34, this, mySettings->vehicleSize);
+
     }
     {
         // persons
@@ -466,7 +470,7 @@ GUIDialog_ViewSettings::GUIDialog_ViewSettings(GUISUMOAbstractView* parent, GUIV
         new FXHorizontalSeparator(frame9, GUIDesignHorizontalSeparator);
 
         FXMatrix* m91 = new FXMatrix(frame9, 2, GUIDesignMatrixViewSettings);
-        myPolyNamePanel = new NamePanel(m91, this, "Show polygon names", mySettings->polyName);
+        myPolyNamePanel = new NamePanel(m91, this, "Show polygon name", mySettings->polyName);
         myPolyTypePanel = new NamePanel(m91, this, "Show polygon types", mySettings->polyType);
         new FXHorizontalSeparator(frame9, GUIDesignHorizontalSeparator);
 
@@ -563,6 +567,7 @@ GUIDialog_ViewSettings::~GUIDialog_ViewSettings() {
     delete myJunctionNamePanel;
     delete myVehicleNamePanel;
     delete myVehicleValuePanel;
+    delete myVehicleTextPanel;
     delete myPersonNamePanel;
     delete myPersonValuePanel;
     delete myAddNamePanel;
@@ -672,11 +677,13 @@ GUIDialog_ViewSettings::onCmdNameChange(FXObject*, FXSelector, void* data) {
     myShowMinGap->setCheck(mySettings->drawMinGap);
     myShowBrakeGap->setCheck(mySettings->drawBrakeGap);
     myShowBTRange->setCheck(mySettings->showBTRange);
+    myShowRouteIndex->setCheck(mySettings->showRouteIndex);
     /*
     myShowLaneChangePreference->setCheck(mySettings->drawLaneChangePreference);
     */
     myVehicleNamePanel->update(mySettings->vehicleName);
     myVehicleValuePanel->update(mySettings->vehicleValue);
+    myVehicleTextPanel->update(mySettings->vehicleText);
     myVehicleSizePanel->update(mySettings->vehicleSize);
 
     myPersonColorMode->setCurrentItem((FXint) mySettings->personColorer.getActive());
@@ -895,6 +902,14 @@ GUIDialog_ViewSettings::onCmdColorChange(FXObject* sender, FXSelector, void* /*v
         } else if (tmpSettings.laneColorer.getScheme().getName() == GUIVisualizationSettings::SCHEME_NAME_EDGEDATA_NUMERICAL) {
             tmpSettings.edgeData = myParamKey->getText().text();
         }
+    } else if (sender == myVehicleParamKey) {
+        if (tmpSettings.vehicleColorer.getScheme().getName() == GUIVisualizationSettings::SCHEME_NAME_PARAM_NUMERICAL) {
+            tmpSettings.vehicleParam = myVehicleParamKey->getText().text();
+        }
+    } else if (sender == myVehicleTextPanel->myCheck) {
+        updateVehicleParams();
+    } else if (sender == myVehicleTextParamKey) {
+        tmpSettings.vehicleTextParam = myVehicleTextParamKey->getText().text();
     }
     tmpSettings.laneWidthExaggeration = (double) myLaneWidthUpscaleDialer->getValue();
     tmpSettings.laneMinSize = (double) myLaneMinWidthDialer->getValue();
@@ -905,11 +920,13 @@ GUIDialog_ViewSettings::onCmdColorChange(FXObject* sender, FXSelector, void* /*v
     tmpSettings.drawMinGap = (myShowMinGap->getCheck() != FALSE);
     tmpSettings.drawBrakeGap = (myShowBrakeGap->getCheck() != FALSE);
     tmpSettings.showBTRange = (myShowBTRange->getCheck() != FALSE);
+    tmpSettings.showRouteIndex = (myShowRouteIndex->getCheck() != FALSE);
     /*
     tmpSettings.drawLaneChangePreference = (myShowLaneChangePreference->getCheck() != FALSE);
     */
     tmpSettings.vehicleName = myVehicleNamePanel->getSettings();
     tmpSettings.vehicleValue = myVehicleValuePanel->getSettings();
+    tmpSettings.vehicleText = myVehicleTextPanel->getSettings();
     tmpSettings.vehicleSize = myVehicleSizePanel->getSettings();
 
     tmpSettings.personColorer.setActive(myPersonColorMode->getCurrentItem());
@@ -1552,9 +1569,8 @@ GUIDialog_ViewSettings::rebuildColorMatrices(bool doCreate) {
     } else {
         myJunctionColorRainbow->enable();
     }
-    const std::string activeSchemeName = myLaneEdgeColorMode->getText().text();
+    std::string activeSchemeName = myLaneEdgeColorMode->getText().text();
     myParamKey->clearItems();
-    myParamKey->setEditable(true);
     if (activeSchemeName == GUIVisualizationSettings::SCHEME_NAME_EDGE_PARAM_NUMERICAL) {
         myParamKey->appendItem(mySettings->edgeParam.c_str());
         for (const std::string& attr : myParent->getEdgeLaneParamKeys(true)) {
@@ -1596,6 +1612,14 @@ GUIDialog_ViewSettings::rebuildColorMatrices(bool doCreate) {
     if (doCreate) {
         m->create();
     }
+    activeSchemeName = myVehicleColorMode->getText().text();
+    myVehicleParamKey->setEditable(true);
+    if (activeSchemeName == GUIVisualizationSettings::SCHEME_NAME_PARAM_NUMERICAL) {
+        updateVehicleParams();
+        myVehicleParamKey->enable();
+    } else {
+        myVehicleParamKey->disable();
+    }
     myVehicleColorSettingFrame->getParent()->recalc();
 
     m = rebuildColorMatrix(myPersonColorSettingFrame, myPersonColors, myPersonThresholds, myPersonButtons, myPersonColorInterpolation, mySettings->personColorer.getScheme());
@@ -1630,6 +1654,22 @@ GUIDialog_ViewSettings::rebuildColorMatrices(bool doCreate) {
     update();
 }
 
+
+void
+GUIDialog_ViewSettings::updateVehicleParams() {
+    myVehicleParamKey->clearItems();
+    myVehicleTextParamKey->clearItems();
+    for (const std::string& attr : myParent->getVehicleParamKeys(false)) {
+        myVehicleParamKey->appendItem(attr.c_str());
+        myVehicleTextParamKey->appendItem(attr.c_str());
+    }
+    if (myVehicleTextParamKey->getNumItems() == 0) {
+        myVehicleParamKey->appendItem(mySettings->vehicleParam.c_str());
+        myVehicleTextParamKey->appendItem(mySettings->vehicleTextParam.c_str());
+    }
+    myVehicleParamKey->setNumVisible(myVehicleParamKey->getNumItems());
+    myVehicleTextParamKey->setNumVisible(myVehicleTextParamKey->getNumItems());
+}
 
 long
 GUIDialog_ViewSettings::onCmdEditTable(FXObject*, FXSelector, void* data) {
@@ -1764,7 +1804,8 @@ GUIDialog_ViewSettings::NamePanel::NamePanel(
     const GUIVisualizationTextSettings& settings) {
     myCheck = new FXCheckButton(parent, title.c_str(), target, MID_SIMPLE_VIEW_COLORCHANGE, GUIDesignCheckButtonViewSettings);
     myCheck->setCheck(settings.show);
-    myConstSizeCheck = new FXCheckButton(parent, "constant text size", target, MID_SIMPLE_VIEW_COLORCHANGE, GUIDesignCheckButtonViewSettings);
+    myMatrix0 = new FXMatrix(parent, 2, GUIDesignViewSettingsMatrix5);
+    myConstSizeCheck = new FXCheckButton(myMatrix0, "constant text size", target, MID_SIMPLE_VIEW_COLORCHANGE, GUIDesignCheckButtonViewSettings);
     myConstSizeCheck->setCheck(settings.constSize);
     FXMatrix* m1 = new FXMatrix(parent, 2, GUIDesignViewSettingsMatrix5);
     new FXLabel(m1, "Size", nullptr, GUIDesignViewSettingsLabel1);

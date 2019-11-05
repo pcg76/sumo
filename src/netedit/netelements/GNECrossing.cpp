@@ -281,6 +281,21 @@ GNECrossing::setAttribute(SumoXMLAttr key, const std::string& value, GNEUndoList
 }
 
 
+bool 
+GNECrossing::isAttributeEnabled(SumoXMLAttr key) const {
+    switch (key) {
+        case SUMO_ATTR_ID:
+            // id isn't editable
+            return false;
+        case SUMO_ATTR_TLLINKINDEX:
+        case SUMO_ATTR_TLLINKINDEX2:
+            return (myParentJunction->getNBNode()->getCrossing(myCrossingEdges)->tlID != "");
+        default:
+            return true;
+    }
+}
+
+
 bool
 GNECrossing::isValid(SumoXMLAttr key, const std::string& value) {
     auto crossing = myParentJunction->getNBNode()->getCrossing(myCrossingEdges);
@@ -314,8 +329,9 @@ GNECrossing::isValid(SumoXMLAttr key, const std::string& value) {
             return canParse<bool>(value);
         case SUMO_ATTR_TLLINKINDEX:
         case SUMO_ATTR_TLLINKINDEX2:
-            return (crossing->tlID != "" && canParse<int>(value)
-                    // -1 means that tlLinkIndex2 takes on the same value as tlLinkIndex when setting idnices
+            // -1 means that tlLinkIndex2 takes on the same value as tlLinkIndex when setting idnices
+            return (isAttributeEnabled(key) &&
+                    canParse<int>(value)
                     && ((parse<double>(value) >= 0) || ((parse<double>(value) == -1) && (key == SUMO_ATTR_TLLINKINDEX2)))
                     && myParentJunction->getNBNode()->getControllingTLS().size() > 0
                     && (*myParentJunction->getNBNode()->getControllingTLS().begin())->getMaxValidIndex() >= parse<int>(value));

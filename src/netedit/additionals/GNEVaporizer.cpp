@@ -286,6 +286,12 @@ GNEVaporizer::isValid(SumoXMLAttr key, const std::string& value) {
 }
 
 
+bool 
+GNEVaporizer::isAttributeEnabled(SumoXMLAttr /* key */) const {
+    return true;
+}
+
+
 std::string
 GNEVaporizer::getPopUpID() const {
     return getTagStr();

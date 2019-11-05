@@ -37,12 +37,15 @@ option **--num-clients** {{DT_INT}}, where 1 is the default. Please note that in
 scenarios you must explicity specify the execution order of the clients
 using the
 [*SetOrder*-command](TraCI/Control-related_commands.md#command_0x03_setorder).
-Each client must specify a unique (but otherwise arbitrar) integer value
+
+Each client must specify a unique (but otherwise arbitrary) integer value
 and the client commands will be handled in the order from the lowest to
-the highest value.
+the highest value within each simulation step.
+
+The clients are automatically synchronized after every simulation step. This means, the simulation does not advance to the next step until all clients have called the 'simulationStep'' command. Also, the simulationStep command only returns control to the client after the simulation has advanced.
 
 !!! caution
-    The simulation will only start once all clients have connected. To advance the simulation, all clients must sent the *simulationStep* command.
+    The simulation will only start once all clients have connected. 
 
 ### Protocol specification
 
@@ -224,18 +227,15 @@ communication](Topics/V2X.md). See
 ## References
 
 - Axel Wegener, Michal Piorkowski, Maxim Raya, Horst Hellbrück, Stefan
-  Fischer and Jean-Pierre Hubaux. TraCI: A Framework for Coupling Road
-  Traffic and Network Simulators. Proceedings of the [11th
-  Communications and Networking Simulation
-  Symposium](http://www.scs.org/confernc/springsim/springsim08/cfp/cns08.htm),
-  April 2008. [Available at ACM Digital
-  Library](http://portal.acm.org/citation.cfm?id=1400740)
+  Fischer and Jean-Pierre Hubaux. TraCI: An Interface for Coupling Road
+  Traffic and Network Simulators. Proceedings of the 11th
+  Communications and Networking Simulation Symposium, April 2008.
+  [Available at ACM Digital Library](https://doi.org/10.1145/1400713.1400740)
 - Axel Wegener, Horst Hellbrück, Christian Wewetzer and Andreas Lübke:
   VANET Simulation Environment with Feedback Loop and its Application
-  to Traffic Light Assistance. Proceedings of the [3rd IEEE Workshop
-  on Automotive Networking and
-  Applications](http://autonet2008.research.telcordia.com/), New
-  Orleans, LA, USA, 2008. Soon available at IEEEXplore
+  to Traffic Light Assistance. Proceedings of the 3rd IEEE Workshop
+  on Automotive Networking and Applications, New Orleans, LA, USA, 2008.
+  [Available at IEEEXplore](https://doi.org/10.1109/GLOCOMW.2008.ECP.67)
 
 ## Performance
 

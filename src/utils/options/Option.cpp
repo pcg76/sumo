@@ -100,9 +100,9 @@ Option::getIntVector() const {
     throw InvalidArgument("This is not an int vector-option");
 }
 
-const FloatVector&
-Option::getFloatVector() const {
-    throw InvalidArgument("This is not an float vector-option");
+const StringVector& 
+Option::getStringVector() const {
+    throw InvalidArgument("This is not a string vector-option");
 }
 
 bool
@@ -454,49 +454,6 @@ Option_BoolExtended::getValueString() const {
 }
 
 
-
-/* -------------------------------------------------------------------------
- * Option_FileName - methods
- * ----------------------------------------------------------------------- */
-Option_FileName::Option_FileName()
-    : Option_String() {
-    myTypeName = "FILE";
-}
-
-
-Option_FileName::Option_FileName(const std::string& value)
-    : Option_String(value) {
-    myTypeName = "FILE";
-}
-
-
-Option_FileName::Option_FileName(const Option_String& s)
-    : Option_String(s) {}
-
-
-Option_FileName::~Option_FileName() {}
-
-
-Option_FileName&
-Option_FileName::operator=(const Option_FileName& s) {
-    Option_String::operator=(s);
-    return (*this);
-}
-
-
-bool
-Option_FileName::isFileName() const {
-    return true;
-}
-
-
-std::string
-Option_FileName::getValueString() const {
-    return StringUtils::urlEncode(myValue, " ;%");
-}
-
-
-
 /* -------------------------------------------------------------------------
  * Option_UIntVector - methods
  * ----------------------------------------------------------------------- */
@@ -538,9 +495,9 @@ Option_IntVector::set(const std::string& v) {
     myValue.clear();
     try {
         if (v.find(';') != std::string::npos) {
-            WRITE_WARNING("Please note that using ';' as list separator is deprecated.\n From 1.0 onwards, only ',' will be accepted.");
+            WRITE_WARNING("Please note that using ';' as list separator is deprecated and not accepted anymore.");
         }
-        StringTokenizer st(v, ";,", true);
+        StringTokenizer st(v, ",", true);
         while (st.hasNext()) {
             myValue.push_back(StringUtils::toInt(st.next()));
         }
@@ -560,64 +517,86 @@ Option_IntVector::getValueString() const {
 
 
 /* -------------------------------------------------------------------------
- * Option_UFloatVector - methods
+ * Option_StringVector - methods
  * ----------------------------------------------------------------------- */
-Option_FloatVector::Option_FloatVector()
-    : Option() {
-    myTypeName = "FLOAT[]";
-}
+Option_StringVector::Option_StringVector() : Option() { myTypeName = "STR[]"; }
 
-
-Option_FloatVector::Option_FloatVector(const FloatVector& value)
+Option_StringVector::Option_StringVector(const StringVector& value)
     : Option(true), myValue(value) {
-    myTypeName = "FLOAT[]";
+    myTypeName = "STR[]";
 }
 
-
-Option_FloatVector::Option_FloatVector(const Option_FloatVector& s)
+Option_StringVector::Option_StringVector(const Option_StringVector& s)
     : Option(s), myValue(s.myValue) {}
 
+Option_StringVector::~Option_StringVector() {}
 
-Option_FloatVector::~Option_FloatVector() {}
-
-
-Option_FloatVector&
-Option_FloatVector::operator=(const Option_FloatVector& s) {
+Option_StringVector&
+Option_StringVector::operator=(const Option_StringVector& s) {
     Option::operator=(s);
     myValue = s.myValue;
     return (*this);
 }
 
-
-const FloatVector&
-Option_FloatVector::getFloatVector() const {
-    return myValue;
-}
-
+const StringVector&
+Option_StringVector::getStringVector() const { return myValue; }
 
 bool
-Option_FloatVector::set(const std::string& v) {
+Option_StringVector::set(const std::string& v) {
     myValue.clear();
     try {
         if (v.find(';') != std::string::npos) {
-            WRITE_WARNING("Please note that using ';' as list separator is deprecated.\n From 1.0 onwards, only ',' will be accepted.");
+            WRITE_WARNING("Please note that using ';' as list separator is deprecated and not accepted anymore.");
         }
-        StringTokenizer st(v, ";,", true);
+        StringTokenizer st(v, ",", true);
         while (st.hasNext()) {
-            myValue.push_back(StringUtils::toDouble(st.next()));
+            myValue.push_back(StringUtils::prune(st.next()));
         }
         return markSet();
     } catch (EmptyData&) {
         throw ProcessError("Empty element occurred in " + v);
     } catch (...) {
-        throw ProcessError("'" + v + "' is not a valid float vector.");
+        throw ProcessError("'" + v + "' is not a valid string vector.");
     }
 }
 
+std::string
+Option_StringVector::getValueString() const {
+    return joinToString(myValue, ',');
+}
+
+
+/* -------------------------------------------------------------------------
+ * Option_FileName - methods
+ * ----------------------------------------------------------------------- */
+Option_FileName::Option_FileName() : Option_StringVector() {
+    myTypeName = "FILE";
+}
+
+Option_FileName::Option_FileName(const StringVector& value)
+    : Option_StringVector(value) {
+    myTypeName = "FILE";
+}
+
+Option_FileName::Option_FileName(const Option_FileName& s)
+    : Option_StringVector(s) {}
+
+Option_FileName::~Option_FileName() {}
+
+Option_FileName& Option_FileName::operator=(const Option_FileName& s) {
+    Option_StringVector::operator=(s);
+    return (*this);
+}
+
+bool Option_FileName::isFileName() const { return true; }
 
 std::string
-Option_FloatVector::getValueString() const {
-    return joinToString(myValue, ',');
+Option_FileName::getString() const {
+    return Option_StringVector::getValueString();
+}
+
+std::string Option_FileName::getValueString() const {
+    return StringUtils::urlEncode(Option_StringVector::getValueString(), " ;%");
 }
 
 

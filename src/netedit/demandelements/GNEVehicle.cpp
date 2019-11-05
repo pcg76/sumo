@@ -260,10 +260,10 @@ GNEVehicle::GNESelectedVehiclesPopupMenu::onCmdTransform(FXObject* obj, FXSelect
 
 GNEVehicle::GNEVehicle(SumoXMLTag tag, GNEViewNet* viewNet, const std::string& vehicleID, GNEDemandElement* vehicleType, GNEDemandElement* route) :
     GNEDemandElement(vehicleID, viewNet, (tag == SUMO_TAG_ROUTEFLOW) ? GLO_ROUTEFLOW : GLO_VEHICLE, tag,
-{}, {}, {}, {}, {vehicleType, route}, {}, {}, {}, {}, {}),
-SUMOVehicleParameter(),
-myFromEdge(nullptr),
-myToEdge(nullptr) {
+        {}, {}, {}, {}, {vehicleType, route}, {}, {}, {}, {}, {}),
+    SUMOVehicleParameter(),
+    myFromEdge(nullptr),
+    myToEdge(nullptr) {
     // SUMOVehicleParameter ID has to be set manually
     id = vehicleID;
     // set manually vtypeID (needed for saving)
@@ -273,10 +273,10 @@ myToEdge(nullptr) {
 
 GNEVehicle::GNEVehicle(GNEViewNet* viewNet, GNEDemandElement* vehicleType, GNEDemandElement* route, const SUMOVehicleParameter& vehicleParameters) :
     GNEDemandElement(vehicleParameters.id, viewNet, (vehicleParameters.tag == SUMO_TAG_ROUTEFLOW) ? GLO_ROUTEFLOW : GLO_VEHICLE, vehicleParameters.tag,
-{}, {}, {}, {}, {vehicleType, route}, {}, {}, {}, {}, {}),
-SUMOVehicleParameter(vehicleParameters),
-myFromEdge(nullptr),
-myToEdge(nullptr) {
+        {}, {}, {}, {}, {vehicleType, route}, {}, {}, {}, {}, {}),
+        SUMOVehicleParameter(vehicleParameters),
+    myFromEdge(nullptr),
+    myToEdge(nullptr) {
     // SUMOVehicleParameter ID has to be set manually
     id = vehicleParameters.id;
     // set manually vtypeID (needed for saving)
@@ -286,10 +286,10 @@ myToEdge(nullptr) {
 
 GNEVehicle::GNEVehicle(GNEViewNet* viewNet, GNEDemandElement* vehicleType, const SUMOVehicleParameter& vehicleParameters) :
     GNEDemandElement(vehicleParameters.id, viewNet, (vehicleParameters.tag == SUMO_TAG_ROUTEFLOW) ? GLO_ROUTEFLOW : GLO_VEHICLE, vehicleParameters.tag,
-{}, {}, {}, {}, {vehicleType}, {}, {}, {}, {}, {}),
-SUMOVehicleParameter(vehicleParameters),
-myFromEdge(nullptr),
-myToEdge(nullptr) {
+        {}, {}, {}, {}, {vehicleType}, {}, {}, {}, {}, {}),
+    SUMOVehicleParameter(vehicleParameters),
+    myFromEdge(nullptr),
+    myToEdge(nullptr) {
     // SUMOVehicleParameter ID has to be set manually
     id = vehicleParameters.id;
     // reset routeid
@@ -301,7 +301,7 @@ myToEdge(nullptr) {
 
 GNEVehicle::GNEVehicle(SumoXMLTag tag, GNEViewNet* viewNet, const std::string& vehicleID, GNEDemandElement* vehicleType, GNEEdge* fromEdge, GNEEdge* toEdge) :
     GNEDemandElement(vehicleID, viewNet, (tag == SUMO_TAG_FLOW) ? GLO_FLOW : GLO_TRIP, tag,
-    {}, {}, {}, {}, {vehicleType}, {}, {}, {}, {}, {}),
+        {}, {}, {}, {}, {vehicleType}, {}, {}, {}, {}, {}),
     SUMOVehicleParameter(),
     myFromEdge(fromEdge),
     myToEdge(toEdge) {
@@ -312,7 +312,7 @@ GNEVehicle::GNEVehicle(SumoXMLTag tag, GNEViewNet* viewNet, const std::string& v
 
 GNEVehicle::GNEVehicle(GNEViewNet* viewNet, GNEDemandElement* vehicleType, GNEEdge* fromEdge, GNEEdge* toEdge, const SUMOVehicleParameter& vehicleParameters) :
     GNEDemandElement(vehicleParameters.id, viewNet, (vehicleParameters.tag == SUMO_TAG_FLOW) ? GLO_FLOW : GLO_TRIP, vehicleParameters.tag,
-    {}, {}, {}, {}, {vehicleType}, {}, {}, {}, {}, {}),
+        {}, {}, {}, {}, {vehicleType}, {}, {}, {}, {}, {}),
     SUMOVehicleParameter(vehicleParameters),
     myFromEdge(fromEdge),
     myToEdge(toEdge) {
@@ -393,6 +393,8 @@ GNEVehicle::writeDemandElement(OutputDevice& device) const {
             device.writeAttr(SUMO_ATTR_PROB, repetitionProbability);
         }
     }
+    // write parameters
+    writeParams(device);
     // write demand element children associated to this vehicle
     for (const auto& i : getDemandElementChildren()) {
         i->writeDemandElement(device);
@@ -1300,59 +1302,8 @@ void
 GNEVehicle::enableAttribute(SumoXMLAttr key, GNEUndoList* undoList) {
     // obtain a copy of parameter sets
     int newParametersSet = parametersSet;
-    // modify parametersSetCopy depending of attr
-    switch (key) {
-        case SUMO_ATTR_END: {
-            // give more priority to end
-            newParametersSet = VEHPARS_END_SET | VEHPARS_NUMBER_SET;
-            break;
-        }
-        case SUMO_ATTR_NUMBER:
-            newParametersSet ^= VEHPARS_END_SET;
-            newParametersSet |= VEHPARS_NUMBER_SET;
-            break;
-        case SUMO_ATTR_VEHSPERHOUR: {
-            // give more priority to end
-            if ((newParametersSet & VEHPARS_END_SET) && (newParametersSet & VEHPARS_NUMBER_SET)) {
-                newParametersSet = VEHPARS_END_SET;
-            } else if (newParametersSet & VEHPARS_END_SET) {
-                newParametersSet = VEHPARS_END_SET;
-            } else if (newParametersSet & VEHPARS_NUMBER_SET) {
-                newParametersSet = VEHPARS_NUMBER_SET;
-            }
-            // set VehsPerHour
-            newParametersSet |= VEHPARS_VPH_SET;
-            break;
-        }
-        case SUMO_ATTR_PERIOD: {
-            // give more priority to end
-            if ((newParametersSet & VEHPARS_END_SET) && (newParametersSet & VEHPARS_NUMBER_SET)) {
-                newParametersSet = VEHPARS_END_SET;
-            } else if (newParametersSet & VEHPARS_END_SET) {
-                newParametersSet = VEHPARS_END_SET;
-            } else if (newParametersSet & VEHPARS_NUMBER_SET) {
-                newParametersSet = VEHPARS_NUMBER_SET;
-            }
-            // set period
-            newParametersSet |= VEHPARS_PERIOD_SET;
-            break;
-        }
-        case SUMO_ATTR_PROB: {
-            // give more priority to end
-            if ((newParametersSet & VEHPARS_END_SET) && (newParametersSet & VEHPARS_NUMBER_SET)) {
-                newParametersSet = VEHPARS_END_SET;
-            } else if (newParametersSet & VEHPARS_END_SET) {
-                newParametersSet = VEHPARS_END_SET;
-            } else if (newParametersSet & VEHPARS_NUMBER_SET) {
-                newParametersSet = VEHPARS_NUMBER_SET;
-            }
-            // set probability
-            newParametersSet |= VEHPARS_PROB_SET;
-            break;
-        }
-        default:
-            break;
-    }
+    // modify newParametersSet
+    GNERouteHandler::setFlowParameters(key, newParametersSet);
     // add GNEChange_EnableAttribute
     undoList->add(new GNEChange_EnableAttribute(this, myViewNet->getNet(), parametersSet, newParametersSet), true);
 }
@@ -1379,7 +1330,7 @@ GNEVehicle::isAttributeEnabled(SumoXMLAttr key) const {
             return (parametersSet & VEHPARS_PROB_SET) != 0;
         default:
             return true;
-    };
+    }
 }
 
 
@@ -1481,33 +1432,29 @@ GNEVehicle::setColor(const GUIVisualizationSettings& s) const {
         // set color depending of vehicle color active
         switch (c.getActive()) {
             case 0: {
-                //test for emergency vehicle
+                // test for emergency vehicle
                 if (getDemandElementParents().at(0)->getAttribute(SUMO_ATTR_GUISHAPE) == "emergency") {
                     GLHelper::setColor(RGBColor::WHITE);
                     break;
                 }
-                //test for firebrigade
+                // test for firebrigade
                 if (getDemandElementParents().at(0)->getAttribute(SUMO_ATTR_GUISHAPE) == "firebrigade") {
                     GLHelper::setColor(RGBColor::RED);
                     break;
                 }
-                //test for police car
+                // test for police car
                 if (getDemandElementParents().at(0)->getAttribute(SUMO_ATTR_GUISHAPE) == "police") {
                     GLHelper::setColor(RGBColor::BLUE);
                     break;
                 }
+                // check if color was set
                 if (wasSet(VEHPARS_COLOR_SET)) {
                     GLHelper::setColor(color);
                     break;
-                }
-                if (getDemandElementParents().at(0)->isAttributeEnabled(SUMO_ATTR_COLOR)) {
+                } else {
+                    // take their parent's color)
                     GLHelper::setColor(getDemandElementParents().at(0)->getColor());
                     break;
-                }
-                if (&(getDemandElementParents().at(1)->getColor()) != &RGBColor::DEFAULT_COLOR) {
-                    GLHelper::setColor(getDemandElementParents().at(1)->getColor());
-                } else {
-                    GLHelper::setColor(c.getScheme().getColor(0));
                 }
                 break;
             }

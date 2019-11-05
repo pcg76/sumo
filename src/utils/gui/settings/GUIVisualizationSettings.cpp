@@ -133,6 +133,7 @@ const double GUIVisualizationDetailSettings::personExaggeration(4);
 
 const std::string GUIVisualizationSettings::SCHEME_NAME_EDGE_PARAM_NUMERICAL("by param (numerical, streetwise)");
 const std::string GUIVisualizationSettings::SCHEME_NAME_LANE_PARAM_NUMERICAL("by param (numerical, lanewise)");
+const std::string GUIVisualizationSettings::SCHEME_NAME_PARAM_NUMERICAL("by param (numerical)");
 const std::string GUIVisualizationSettings::SCHEME_NAME_EDGEDATA_NUMERICAL("by edgeData (numerical, streetwise)");
 const std::string GUIVisualizationSettings::SCHEME_NAME_SELECTION("by selection");
 const std::string GUIVisualizationSettings::SCHEME_NAME_TYPE("by type");
@@ -324,14 +325,19 @@ GUIVisualizationSettings::GUIVisualizationSettings(bool _netedit) :
     spreadSuperposed(false),
     edgeParam("EDGE_KEY"),
     laneParam("LANE_KEY"),
+    vehicleParam("PARAM_NUMERICAL"),
+    vehicleTextParam("PARAM_TEXT"),
     edgeData("speed"),
     vehicleQuality(0), showBlinker(true),
     drawLaneChangePreference(false),
     drawMinGap(false),
     drawBrakeGap(false),
-    showBTRange(false), vehicleSize(1),
+    showBTRange(false),
+    showRouteIndex(false),
+    vehicleSize(1),
     vehicleName(false, 60, RGBColor(204, 153, 0, 255)),
     vehicleValue(false, 80, RGBColor::CYAN),
+    vehicleText(false, 80, RGBColor::RED),
     personQuality(0),
     personSize(1),
     personName(false, 60, RGBColor(0, 153, 204, 255)),
@@ -691,6 +697,9 @@ GUIVisualizationSettings::initSumoGuiDefaults() {
     scheme.setAllowsNegativeValues(true);
     vehicleColorer.addScheme(scheme);
     vehicleColorer.addScheme(GUIColorScheme("random", RGBColor::YELLOW, "", true));
+    scheme = GUIColorScheme(SCHEME_NAME_PARAM_NUMERICAL, RGBColor(204, 204, 204));
+    scheme.setAllowsNegativeValues(true);
+    vehicleColorer.addScheme(scheme);
 
     /// add person coloring schemes
     personColorer.addScheme(GUIColorScheme("given person/type color", RGBColor::BLUE, "", true));
@@ -1213,6 +1222,8 @@ GUIVisualizationSettings::save(OutputDevice& dev) const {
     dev.writeAttr("spreadSuperposed", spreadSuperposed);
     dev.writeAttr("edgeParam", edgeParam);
     dev.writeAttr("laneParam", laneParam);
+    dev.writeAttr("vehicleParam", vehicleParam);
+    dev.writeAttr("vehicleTextParam", vehicleTextParam);
     dev.writeAttr("edgeData", edgeData);
     dev.lf();
     dev << "               ";
@@ -1242,12 +1253,17 @@ GUIVisualizationSettings::save(OutputDevice& dev) const {
     dev.writeAttr("showBlinker", showBlinker);
     dev.writeAttr("drawMinGap", drawMinGap);
     dev.writeAttr("drawBrakeGap", drawBrakeGap);
+    dev.writeAttr("showBTRange", showBTRange);
+    dev.writeAttr("showRouteIndex", showRouteIndex);
     dev.lf();
     dev << "                 ";
     vehicleName.print(dev, "vehicleName");
     dev.lf();
     dev << "                 ";
     vehicleValue.print(dev, "vehicleValue");
+    dev.lf();
+    dev << "                 ";
+    vehicleText.print(dev, "vehicleText");
     vehicleColorer.save(dev);
     dev.closeTag();
     // persons
@@ -1426,6 +1442,12 @@ GUIVisualizationSettings::operator==(const GUIVisualizationSettings& v2) {
     if (laneParam != v2.laneParam) {
         return false;
     }
+    if (vehicleParam != v2.vehicleParam) {
+        return false;
+    }
+    if (vehicleTextParam != v2.vehicleTextParam) {
+        return false;
+    }
     if (edgeData != v2.edgeData) {
         return false;
     }
@@ -1453,10 +1475,16 @@ GUIVisualizationSettings::operator==(const GUIVisualizationSettings& v2) {
     if (showBTRange != v2.showBTRange) {
         return false;
     }
+    if (showRouteIndex != v2.showRouteIndex) {
+        return false;
+    }
     if (vehicleName != v2.vehicleName) {
         return false;
     }
     if (vehicleValue != v2.vehicleValue) {
+        return false;
+    }
+    if (vehicleText != v2.vehicleText) {
         return false;
     }
     if (!(personColorer == v2.personColorer)) {

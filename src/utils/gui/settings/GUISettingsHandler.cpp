@@ -146,6 +146,8 @@ GUISettingsHandler::myStartElement(int element,
             mySettings.spreadSuperposed = StringUtils::toBool(attrs.getStringSecure("spreadSuperposed", toString(mySettings.spreadSuperposed)));
             mySettings.edgeParam = attrs.getStringSecure("edgeParam", mySettings.edgeParam);
             mySettings.laneParam = attrs.getStringSecure("laneParam", mySettings.laneParam);
+            mySettings.vehicleParam = attrs.getStringSecure("vehicleParam", mySettings.vehicleParam);
+            mySettings.vehicleTextParam = attrs.getStringSecure("vehicleTextParam", mySettings.vehicleTextParam);
             mySettings.edgeData = attrs.getStringSecure("edgeData", mySettings.edgeData);
             myCurrentColorer = element;
             mySettings.edgeColorer.setActive(laneEdgeMode);
@@ -221,9 +223,12 @@ GUISettingsHandler::myStartElement(int element,
             mySettings.showBlinker = StringUtils::toBool(attrs.getStringSecure("showBlinker", toString(mySettings.showBlinker)));
             mySettings.drawMinGap = StringUtils::toBool(attrs.getStringSecure("drawMinGap", toString(mySettings.drawMinGap)));
             mySettings.drawBrakeGap = StringUtils::toBool(attrs.getStringSecure("drawBrakeGap", toString(mySettings.drawBrakeGap)));
+            mySettings.showBTRange = StringUtils::toBool(attrs.getStringSecure("showBTRange", toString(mySettings.showBTRange)));
+            mySettings.showRouteIndex = StringUtils::toBool(attrs.getStringSecure("showRouteIndex", toString(mySettings.showRouteIndex)));
             mySettings.vehicleSize = parseSizeSettings("vehicle", attrs, mySettings.vehicleSize);
             mySettings.vehicleName = parseTextSettings("vehicleName", attrs, mySettings.vehicleName);
             mySettings.vehicleValue = parseTextSettings("vehicleValue", attrs, mySettings.vehicleValue);
+            mySettings.vehicleText = parseTextSettings("vehicleText", attrs, mySettings.vehicleText);
             myCurrentColorer = element;
             break;
         case SUMO_TAG_VIEWSETTINGS_PERSONS:

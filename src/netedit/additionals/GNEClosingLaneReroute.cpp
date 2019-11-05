@@ -161,6 +161,12 @@ GNEClosingLaneReroute::isValid(SumoXMLAttr key, const std::string& value) {
 }
 
 
+bool 
+GNEClosingLaneReroute::isAttributeEnabled(SumoXMLAttr /* key */) const {
+    return true;
+}
+
+
 std::string
 GNEClosingLaneReroute::getPopUpID() const {
     return getTagStr();

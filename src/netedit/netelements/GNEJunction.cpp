@@ -458,10 +458,10 @@ std::vector<GNEJunction*>
 GNEJunction::getJunctionNeighbours() const {
     // use set to avoid duplicates junctions
     std::set<GNEJunction*> junctions;
-    for (auto i : myGNEIncomingEdges) {
+    for (const auto &i : myGNEIncomingEdges) {
         junctions.insert(i->getGNEJunctionSource());
     }
-    for (auto i : myGNEOutgoingEdges) {
+    for (const auto &i : myGNEOutgoingEdges) {
         junctions.insert(i->getGNEJunctionDestiny());
     }
     return std::vector<GNEJunction*>(junctions.begin(), junctions.end());
@@ -552,8 +552,8 @@ GNEJunction::getGNECrossings() const {
 std::vector<GNEConnection*>
 GNEJunction::getGNEConnections() const {
     std::vector<GNEConnection*> connections;
-    for (auto i : myGNEIncomingEdges) {
-        for (auto j : i->getGNEConnections()) {
+    for (const auto &i : myGNEIncomingEdges) {
+        for (const auto &j : i->getGNEConnections()) {
             connections.push_back(j);
         }
     }
@@ -973,8 +973,8 @@ GNEJunction::retrieveGNECrossing(NBNode::Crossing* crossing, bool createIfNoExis
 void
 GNEJunction::markConnectionsDeprecated(bool includingNeighbours) {
     // only it's needed to mark the connections of incoming edges
-    for (auto i : myGNEIncomingEdges) {
-        for (auto j : i->getGNEConnections()) {
+    for (const auto &i : myGNEIncomingEdges) {
+        for (const auto &j : i->getGNEConnections()) {
             j->markConnectionGeometryDeprecated();
         }
         if (includingNeighbours) {
@@ -1000,26 +1000,30 @@ GNEJunction::getAttribute(SumoXMLAttr key) const {
         case SUMO_ATTR_RADIUS:
             return toString(myNBNode.getRadius());
         case SUMO_ATTR_TLTYPE:
-            // @todo this causes problems if the node were to have multiple programs of different type (plausible)
-            return myNBNode.isTLControlled() ? toString((*myNBNode.getControllingTLS().begin())->getType()) : "";
+            if (isAttributeEnabled(SUMO_ATTR_TLTYPE)) {
+                // @todo this causes problems if the node were to have multiple programs of different type (plausible)
+                return toString((*myNBNode.getControllingTLS().begin())->getType());
+            } else {
+                return "No TLS";
+            }
         case SUMO_ATTR_TLID:
-            return myNBNode.isTLControlled() ? toString((*myNBNode.getControllingTLS().begin())->getID()) : "";
+            if (isAttributeEnabled(SUMO_ATTR_TLID)) {
+                return toString((*myNBNode.getControllingTLS().begin())->getID());
+            } else {
+                return "No TLS";
+            }
         case SUMO_ATTR_KEEP_CLEAR:
             // keep clear is only used as a convenience feature in plain xml
             // input. When saving to .net.xml the status is saved only for the connections
             // to show the correct state we must check all connections
-            if (!myNBNode.getKeepClear()) {
-                return toString(false);
-            } else {
-                for (auto i : myGNEIncomingEdges) {
-                    for (auto j : i->getGNEConnections()) {
-                        if (j->getNBEdgeConnection().keepClear) {
-                            return toString(true);
-                        }
+            for (const auto &i : myGNEIncomingEdges) {
+                for (const auto &j : i->getGNEConnections()) {
+                    if (j->getNBEdgeConnection().keepClear) {
+                        return toString(true);
                     }
                 }
-                return toString(false);
             }
+            return toString(false);
         case SUMO_ATTR_RIGHT_OF_WAY:
             return SUMOXMLDefinitions::RightOfWayValues.getString(myNBNode.getRightOfWay());
         case SUMO_ATTR_FRINGE:
@@ -1054,12 +1058,11 @@ GNEJunction::setAttribute(SumoXMLAttr key, const std::string& value, GNEUndoList
         case SUMO_ATTR_KEEP_CLEAR:
             // change Keep Clear attribute in all connections
             undoList->p_begin("change keepClear for whole junction");
-            for (auto i : myGNEIncomingEdges) {
-                for (auto j : i->getGNEConnections()) {
+            for (const auto &i : myGNEIncomingEdges) {
+                for (const auto &j : i->getGNEConnections()) {
                     undoList->add(new GNEChange_Attribute(j, myNet, key, value), true);
                 }
             }
-            undoList->add(new GNEChange_Attribute(this, myNet, key, value), true);
             undoList->p_end();
             break;
         case SUMO_ATTR_TYPE: {
@@ -1220,6 +1223,27 @@ GNEJunction::isValid(SumoXMLAttr key, const std::string& value) {
 }
 
 
+bool 
+GNEJunction::isAttributeEnabled(SumoXMLAttr key) const {
+    switch (key) {
+        case SUMO_ATTR_TLTYPE:
+        case SUMO_ATTR_TLID:
+            return myNBNode.isTLControlled();
+        case SUMO_ATTR_KEEP_CLEAR: {
+            // check if at least there is an incoming connection
+            for (const auto &i : myGNEIncomingEdges) {
+                if (i->getGNEConnections().size() > 0) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        default:
+            return true;
+    }
+}
+
+
 void
 GNEJunction::setResponsible(bool newVal) {
     myAmResponsible = newVal;
@@ -1232,6 +1256,9 @@ GNEJunction::setResponsible(bool newVal) {
 void
 GNEJunction::setAttribute(SumoXMLAttr key, const std::string& value) {
     switch (key) {
+        case SUMO_ATTR_KEEP_CLEAR: {
+            throw InvalidArgument(toString(key) + " cannot be edited");
+        }
         case SUMO_ATTR_ID: {
             myNet->renameJunction(this, value);
             break;
@@ -1260,7 +1287,7 @@ GNEJunction::setAttribute(SumoXMLAttr key, const std::string& value) {
                 // clear guessed connections. previous connections will be restored
                 myNBNode.invalidateIncomingConnections();
                 // Clear GNEConnections of incoming edges
-                for (auto i : myGNEIncomingEdges) {
+                for (const auto &i : myGNEIncomingEdges) {
                     i->clearGNEConnections();
                 }
             }
@@ -1283,14 +1310,11 @@ GNEJunction::setAttribute(SumoXMLAttr key, const std::string& value) {
             break;
         }
         case SUMO_ATTR_TLTYPE: {
+            // we need to make a copy of controlling TLS (because original will be updated)
             const std::set<NBTrafficLightDefinition*> copyOfTls = myNBNode.getControllingTLS();
             for (auto it : copyOfTls) {
                 it->setType(SUMOXMLDefinitions::TrafficLightTypes.get(value));
             }
-            break;
-        }
-        case SUMO_ATTR_KEEP_CLEAR: {
-            myNBNode.setKeepClear(parse<bool>(value));
             break;
         }
         case SUMO_ATTR_RIGHT_OF_WAY:

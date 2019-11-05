@@ -232,13 +232,11 @@ OptionsCont::getIntVector(const std::string& name) const {
     return o->getIntVector();
 }
 
-
-const FloatVector&
-OptionsCont::getFloatVector(const std::string& name) const {
+const StringVector&
+OptionsCont::getStringVector(const std::string& name) const {
     Option* o = getSecure(name);
-    return o->getFloatVector();
+    return o->getStringVector();
 }
-
 
 bool
 OptionsCont::set(const std::string& name, const std::string& value) {
@@ -338,13 +336,12 @@ void
 OptionsCont::relocateFiles(const std::string& configuration) const {
     for (Option* const option : myAddresses) {
         if (option->isFileName() && option->isSet()) {
-            std::vector<std::string> fileList = StringTokenizer(option->getString(), ",").getVector();
+            StringVector fileList = StringVector(option->getStringVector());
             for (std::string& f : fileList) {
-                // Pruning is necessary because filenames may be separated by ', ' in the configuration file
-                f = StringUtils::urlDecode(FileHelpers::checkForRelativity(StringUtils::prune(f), configuration));
+                f = StringUtils::urlDecode(FileHelpers::checkForRelativity(f, configuration));
             }
             const std::string conv = joinToString(fileList, ',');
-            if (conv != option->getString()) {
+            if (conv != joinToString(option->getStringVector(), ',')) {
                 const bool hadDefault = option->isDefault();
                 option->set(conv);
                 if (hadDefault) {
@@ -917,20 +914,9 @@ OptionsCont::writeXMLHeader(std::ostream& os, const bool includeConfig) const {
 }
 
 
-std::vector<std::string>
-OptionsCont::getStringVector(const std::string& name) const {
-    StringTokenizer st(getSecure(name)->getString(), ",", true);
-    std::vector<std::string> ret = st.getVector();
-    for (std::vector<std::string>::iterator i = ret.begin(); i != ret.end(); ++i) {
-        (*i) = StringUtils::prune(*i);
-    }
-    return ret;
-}
-
-
 bool
 OptionsCont::isInStringVector(const std::string& optionName,
-                              const std::string& itemName) {
+                              const std::string& itemName) const {
     if (isSet(optionName)) {
         std::vector<std::string> values = getStringVector(optionName);
         return std::find(values.begin(), values.end(), itemName) != values.end();

@@ -48,6 +48,7 @@ _REFERENCE_PNG = os.path.join(os.path.dirname(__file__), "reference.png")
 # interaction functions
 #################################################
 
+
 def typeEscape():
     """
     @brief type escape key
@@ -237,6 +238,7 @@ def dragDrop(referencePosition, x1, y1, x2, y2):
 # basic functions
 #################################################
 
+
 def Popen(extraParameters, debugInformation):
     """
     @brief open netedit
@@ -281,6 +283,10 @@ def Popen(extraParameters, debugInformation):
     # set output for routes
     neteditCall += ['--demandelements-output',
                     os.path.join(_TEXTTEST_SANDBOX, "routes.xml")]
+
+    # set output for gui
+    neteditCall += ['--gui-testing.setting-output',
+                    os.path.join(_TEXTTEST_SANDBOX, "guisettingsoutput.xml")]
 
     # add extra parameters
     neteditCall += extraParameters
@@ -722,6 +728,7 @@ def changeEditMode(key):
 # Create nodes and edges
 #################################################
 
+
 def createEdgeMode():
     """
     @brief Change to create edge mode
@@ -741,6 +748,7 @@ def cancelEdge():
 #################################################
 # Inspect mode
 #################################################
+
 
 def inspectMode():
     """
@@ -786,9 +794,40 @@ def modifyBoolAttribute(attributeNumber, overlapped):
     # type SPACE to change value
     typeSpace()
 
+
+def checkParameters(referencePosition, attributeNumber, overlapped):
+    """
+    @brief Check generic parameters
+    """
+    # Change generic parameters with an invalid value (dummy)
+    modifyAttribute(attributeNumber, "dummyGenericParameters", overlapped)
+    # Change generic parameters with an invalid value (invalid format)
+    modifyAttribute(attributeNumber, "key1|key2|key3", overlapped)
+    # Change generic parameters with a valid value
+    modifyAttribute(attributeNumber, "key1=value1|key2=value2|key3=value3", overlapped)
+    # Change generic parameters with a valid value (empty values)
+    modifyAttribute(attributeNumber, "key1=|key2=|key3=", overlapped)
+    # Change generic parameters with a valid value (clear parameters)
+    modifyAttribute(attributeNumber, "", overlapped)
+    # Change generic parameters with an valid value (duplicated keys)
+    modifyAttribute(attributeNumber, "key1duplicated=value1|key1duplicated=value2|key3=value3", overlapped)
+    # Change generic parameters with a valid value (duplicated values)
+    modifyAttribute(attributeNumber, "key1=valueDuplicated|key2=valueDuplicated|key3=valueDuplicated", overlapped)
+    # Change generic parameters with an invalid value (invalid key characters)
+    modifyAttribute(attributeNumber, "keyInvalid.;%>%$$=value1|key2=value2|key3=value3", overlapped)
+    # Change generic parameters with a invalid value (invalid value characters)
+    modifyAttribute(attributeNumber, "key1=valueInvalid%;%$<>$$%|key2=value2|key3=value3", overlapped)
+    # Change generic parameters with a valid value
+    modifyAttribute(attributeNumber, "keyFinal1=value1|keyFinal2=value2|keyFinal3=value3", overlapped)
+    # Check undo (including load/creation)
+    undo(referencePosition, 8)
+    # Check redo
+    redo(referencePosition, 8)
+
 #################################################
 # Move mode
 #################################################
+
 
 def moveMode():
     """
@@ -810,6 +849,7 @@ def moveElement(referencePosition, startX, startY, endX, endY):
 # crossings
 #################################################
 
+
 def crossingMode():
     """
     @brief Change to crossing mode
@@ -819,15 +859,19 @@ def crossingMode():
     time.sleep(DELAY_CHANGEMODE)
 
 
-def createCrossing():
+def createCrossing(hasTLS):
     """
     @brief create crossing
     """
     # focus current frame
     focusOnFrame()
-    # jump to create crossing button
-    for _ in range(7):
-        typeTab()
+    # jump to create crossing button depending of hasTLS
+    if hasTLS:
+        for _ in range(6):
+            typeTab()
+    else:
+        for _ in range(7):
+            typeTab()
     # type space to create crossing
     typeSpace()
 
@@ -899,6 +943,7 @@ def crossingInvertEdges(useSelectedEdges=False, thereIsSelectedEdges=False):
 # Connection mode
 #################################################
 
+
 def connectionMode():
     """
     @brief Change to connection mode
@@ -946,6 +991,7 @@ def saveConnectionEdit():
 #################################################
 # additionals
 #################################################
+
 
 def additionalMode():
     """
@@ -1087,6 +1133,7 @@ def fixStoppingPlace(solution):
 # route elements
 #################################################
 
+
 def routeMode():
     """
     @brief change to route mode
@@ -1127,6 +1174,7 @@ def changeRouteVClass(value):
 #################################################
 # person elements
 #################################################
+
 
 def personMode():
     """
@@ -1209,6 +1257,7 @@ def changePersonFlowPlan(personFlowPlan, subPersonFlowPlan):
 # stop elements
 #################################################
 
+
 def stopMode():
     """
     @brief change to person mode
@@ -1248,6 +1297,7 @@ def changeStopType(stopType):
 # vehicle elements
 #################################################
 
+
 def vehicleMode():
     """
     @brief change to vehicle mode
@@ -1259,6 +1309,7 @@ def vehicleMode():
 #################################################
 # delete
 #################################################
+
 
 def deleteMode():
     """
@@ -1315,6 +1366,7 @@ def waitDeleteWarning():
 #################################################
 # select mode
 #################################################
+
 
 def selectMode():
     """
@@ -1550,6 +1602,7 @@ def selectionInvertDemand():
 # traffic light
 #################################################
 
+
 def selectTLSMode():
     """
     @brief Change to traffic light mode
@@ -1575,6 +1628,7 @@ def createTLS():
 # shapes
 #################################################
 
+
 def shapeMode():
     """
     @brief change to shape mode
@@ -1582,7 +1636,7 @@ def shapeMode():
     typeKey('p')
     # wait for gl debug
     time.sleep(DELAY_CHANGEMODE)
-    
+
 
 def createSquaredPoly(referencePosition, positionx, positiony, size, close):
     """
@@ -1704,6 +1758,7 @@ def GEOPOILatLon():
 #################################################
 # Contextual menu
 #################################################
+
 
 def contextualMenuOperation(referencePosition, positionx, positiony, operation, suboperation1, suboperation2=0):
     # obtain clicked position

@@ -29,6 +29,7 @@
 #include <string>
 #include <functional>
 #include <utils/common/StringUtils.h>
+#include <utils/common/StringTokenizer.h>
 #include <utils/geom/GeomHelper.h>
 #include <utils/vehicle/SUMOVehicleParameter.h>
 #include <utils/emissions/PollutantsInterface.h>
@@ -502,6 +503,21 @@ GUIBaseVehicle::drawOnPos(const GUIVisualizationSettings& s, const Position& pos
         const double value = getColorValue(s, s.vehicleColorer.getActive());
         GLHelper::drawTextSettings(s.vehicleValue, toString(value), Position(0, 0), s.scale, s.angle);
     }
+    if (s.vehicleText.show) {
+        const std::string& value = myVehicle.getParameter().getParameter(s.vehicleTextParam, "");
+        if (value != "") {
+            auto lines = StringTokenizer(value, StringTokenizer::NEWLINE).getVector();
+            glRotated(-s.angle, 0, 0, 1);
+            glTranslated(0, 0.7 * s.vehicleText.scaledSize(s.scale) * lines.size(), 0);
+            glRotated(s.angle, 0, 0, 1);
+            for (std::string& line : lines) {
+                GLHelper::drawTextSettings(s.vehicleText, line, Position(0, 0), s.scale, s.angle);
+                glRotated(-s.angle, 0, 0, 1);
+                glTranslated(0, -0.7 * s.vehicleText.scaledSize(s.scale), 0);
+                glRotated(s.angle, 0, 0, 1);
+            }
+        }
+    }
 
     if (!drawCarriages) {
         mySeatPositions.clear();
@@ -705,14 +721,15 @@ GUIBaseVehicle::removeActiveAddVisualisation(GUISUMOAbstractView* const parent, 
 
 void
 GUIBaseVehicle::drawRoute(const GUIVisualizationSettings& s, int routeNo, double darken, bool future) const {
-    GLHelper::setColor(setColor(s).changedBrightness((int)(darken * -255)));
+    RGBColor darker = setColor(s).changedBrightness((int)(darken * -255));
+    GLHelper::setColor(darker);
     if (routeNo == 0) {
-        drawRouteHelper(s, myVehicle.getRoute(), future);
+        drawRouteHelper(s, myVehicle.getRoute(), future, darker);
         return;
     }
     const MSRoute* route = myRoutes->getRoute(routeNo - 1); // only prior routes are stored
     if (route != nullptr) {
-        drawRouteHelper(s, *route, future);
+        drawRouteHelper(s, *route, future, darker);
     }
 }
 

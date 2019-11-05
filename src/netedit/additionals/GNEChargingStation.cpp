@@ -313,6 +313,11 @@ GNEChargingStation::isValid(SumoXMLAttr key, const std::string& value) {
     }
 }
 
+bool 
+GNEChargingStation::isAttributeEnabled(SumoXMLAttr /* key */) const {
+    return true;
+}
+
 // ===========================================================================
 // private
 // ===========================================================================

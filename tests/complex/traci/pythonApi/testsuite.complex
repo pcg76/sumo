@@ -35,7 +35,7 @@ trafficlight
 simulation
 
 # Tests the simulation API
-simulation_copy
+# simulation_copy (automatically commented due to no test directory being found)
 
 # Tests the route API
 route
@@ -106,4 +106,6 @@ moveToXY
 # Tests for lateral collisions
 lateralCollision
 
+# test accessing the ssm device
+ssm
 bugs

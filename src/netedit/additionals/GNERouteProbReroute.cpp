@@ -157,6 +157,12 @@ GNERouteProbReroute::isValid(SumoXMLAttr key, const std::string& value) {
 }
 
 
+bool 
+GNERouteProbReroute::isAttributeEnabled(SumoXMLAttr /* key */) const {
+    return true;
+}
+
+
 std::string
 GNERouteProbReroute::getPopUpID() const {
     return getTagStr();

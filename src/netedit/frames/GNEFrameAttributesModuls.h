@@ -44,6 +44,8 @@ public:
 
     class AttributesCreator;
     class AttributesEditor;
+    class AttributesCreatorFlow;
+    class AttributesEditorFlow;
 
     // ===========================================================================
     // class AttributesCreatorRow
@@ -65,12 +67,6 @@ public:
 
         /// @brief return value
         std::string getValue() const;
-
-        /// @brief return status of radio button
-        bool getAttributeRadioButtonCheck() const;
-
-        /// @brief enable or disable radio button for disjoint attributes
-        void setAttributeRadioButtonCheck(bool value);
 
         /// @brief return status of label checkbox button
         bool getAttributeCheckButtonCheck() const;
@@ -106,9 +102,6 @@ public:
 
         /// @brief called when user press the "Color" button
         long onCmdSelectColorButton(FXObject*, FXSelector, void*);
-
-        /// @brief called when user press a radio button
-        long onCmdSelectRadioButton(FXObject*, FXSelector, void*);
         /// @}
 
     protected:
@@ -136,9 +129,6 @@ public:
         /// @brief Label with the name of the attribute
         FXLabel* myAttributeLabel = nullptr;
 
-        /// @brief Radio button for disjoint attributes
-        FXRadioButton* myAttributeRadioButton = nullptr;
-
         /// @brief check button to enable/disable Label attribute
         FXCheckButton* myAttributeCheckButton = nullptr;
 
@@ -151,7 +141,7 @@ public:
         /// @brief check button to enable/disable the value of boolean parameters
         FXCheckButton* myValueCheckButton = nullptr;
     };
-
+    
     // ===========================================================================
     // class AttributesCreator
     // ===========================================================================
@@ -200,9 +190,6 @@ public:
         long onCmdHelp(FXObject*, FXSelector, void*);
         /// @}
 
-        /// @brief update disjoint attributes
-        void updateDisjointAttributes(AttributesCreatorRow* row);
-
         /// @brief refresh rows (called after creating an element)
         void refreshRows();
 
@@ -213,6 +200,9 @@ public:
         /// @brief pointer to Frame Parent
         GNEFrame* myFrameParent = nullptr;
 
+        /// @brief pointer to myAttributesCreatorFlow
+        AttributesCreatorFlow* myAttributesCreatorFlow = nullptr;
+
         /// @brief current edited Tag Properties
         GNEAttributeCarrier::TagProperties myTagProperties;
 
@@ -221,6 +211,89 @@ public:
 
         /// @brief help button
         FXButton* myHelpButton = nullptr;
+    };
+
+    // ===========================================================================
+    // class AttributesCreatorFlow
+    // ===========================================================================
+
+    class AttributesCreatorFlow : public FXGroupBox {
+        /// @brief FOX-declaration
+        FXDECLARE(GNEFrameAttributesModuls::AttributesCreatorFlow)
+
+    public:
+        /// @brief constructor
+        AttributesCreatorFlow(AttributesCreator* attributesCreatorParent);
+
+        /// @brief destructor
+        ~AttributesCreatorFlow();
+
+        /// @brief show AttributesCreatorFlow modul
+        void showAttributesCreatorFlowModul();
+
+        /// @brief hide group box
+        void hideAttributesCreatorFlowModul();
+
+        /// @brief refresh AttributesCreatorFlow
+        void refreshAttributesCreatorFlow();
+
+        /// @brief set parameters
+        void setFlowParameters(std::map<SumoXMLAttr, std::string> &parameters);
+
+        /// @brief check if parameters of attributes are valid
+        bool areValuesValid() const;
+
+        /// @brief show warning message with information about non-valid attributes
+        void showWarningMessage(std::string extra = "") const;
+
+        /// @name FOX-callbacks
+        /// @{
+        /// @brief called when user set the value of an attribute of type int/float/string/bool
+        long onCmdSetFlowAttribute(FXObject*, FXSelector, void*);
+
+        /// @brief called when user press a radio button
+        long onCmdSelectFlowRadioButton(FXObject*, FXSelector, void*);
+        /// @}
+
+    protected:
+        FOX_CONSTRUCTOR(AttributesCreatorFlow);
+
+    private:
+        /// @brief pointer to Attributes Creator Parent 
+        AttributesCreator* myAttributesCreatorParent;
+
+        /// @brief Radio button for 'end' attribute
+        FXRadioButton* myAttributeEndRadioButton = nullptr;
+
+        /// @brief textField for 'end' attribute
+        FXTextField* myValueEndTextField = nullptr;
+
+        /// @brief Radio button for 'number' attribute
+        FXRadioButton* myAttributeNumberRadioButton = nullptr;
+
+        /// @brief textField for 'number' attribute
+        FXTextField* myValueNumberTextField = nullptr;
+
+        /// @brief Radio button for 'VehsPerHour' attribute
+        FXRadioButton* myAttributeVehsPerHourRadioButton = nullptr;
+
+        /// @brief textField for 'VehsPerHour' attribute
+        FXTextField* myValueVehsPerHourTextField = nullptr;
+
+        /// @brief Radio button for 'period' attribute
+        FXRadioButton* myAttributePeriodRadioButton = nullptr;
+
+        /// @brief textField for 'period' attribute
+        FXTextField* myValuePeriodTextField = nullptr;
+
+        /// @brief Radio button for 'probability' attribute
+        FXRadioButton* myAttributeProbabilityRadioButton = nullptr;
+
+        /// @brief textField for 'probability' attribute
+        FXTextField* myValueProbabilityTextField = nullptr;
+
+        /// @brief variable used to save current flow configuration
+        int myFlowParameters;
     };
 
     // ===========================================================================
@@ -253,9 +326,6 @@ public:
         /// @brief called when user press a check button
         long onCmdSelectCheckButton(FXObject*, FXSelector, void*);
 
-        /// @brief called when user press the radio button or the checkbox for enabling/disabling attributes
-        long onCmdEnableAttribute(FXObject* obj, FXSelector, void*);
-
         /// @brief open model dialog for more comfortable attribute editing
         long onCmdOpenAttributeDialog(FXObject*, FXSelector, void*);
         /// @}
@@ -279,9 +349,6 @@ public:
         /// @brief pointer to attribute label
         FXLabel* myAttributeLabel = nullptr;
 
-        /// @brief Radio button for disjoint attributes
-        FXRadioButton* myAttributeRadioButton = nullptr;
-
         /// @brief pointer to attribute  menu check
         FXCheckButton* myAttributeCheckButton = nullptr;
 
@@ -300,7 +367,7 @@ public:
         /// @brief pointer to menu check
         FXCheckButton* myValueCheckButton = nullptr;
     };
-
+    
     // ===========================================================================
     // class AttributesEditor
     // ===========================================================================
@@ -344,6 +411,9 @@ public:
         /// @brief pointer to GNEFrame parent
         GNEFrame* myFrameParent = nullptr;
 
+        /// @brief pointer to attributesEditorFlow
+        AttributesEditorFlow* myAttributesEditorFlow = nullptr;
+
         /// @brief list of Attribute editor rows
         std::vector<AttributesEditorRow*> myAttributesEditorRows;
 
@@ -355,6 +425,92 @@ public:
 
         /// @brief flag used to mark if current edited ACs are bein edited including extended attribute
         bool myIncludeExtended;
+    };
+
+    // ===========================================================================
+    // class AttributesEditorFlow
+    // ===========================================================================
+
+    class AttributesEditorFlow : protected FXGroupBox {
+        /// @brief FOX-declaration
+        FXDECLARE(GNEFrameAttributesModuls::AttributesEditorFlow)
+
+    public:
+        /// @brief constructor
+        AttributesEditorFlow(AttributesEditor* attributesEditorParent);
+
+        /// @brief show attributes editor Flow Modul
+        void showAttributeEditorFlowModul();
+
+        /// @brief hide attribute EditorFlow
+        void hideAttributesEditorFlowModul();
+
+        /// @brief check if attribute editor flow modul is shown
+        bool isAttributesEditorFlowModulShown() const;
+
+        /// @brief refresh attribute EditorFlow (only the valid values will be refresh)
+        void refreshAttributeEditorFlow();
+
+        /// @name FOX-callbacks
+        /// @{
+        /// @brief called when user set the value of an attribute of type int/float/string/bool
+        long onCmdSetFlowAttribute(FXObject*, FXSelector, void*);
+
+        /// @brief called when user press a radio button
+        long onCmdSelectFlowRadioButton(FXObject*, FXSelector, void*);
+        /// @}
+
+    protected:
+		FOX_CONSTRUCTOR(AttributesEditorFlow)
+
+        /// @brief refresh end
+        void refreshEnd();
+
+        /// @brief refresh parameter number
+        void refreshNumber();
+
+        /// @brief refresh parameter VehsPerHour
+        void refreshVehsPerHour();
+
+        /// @brief refresh parameter Period
+        void refreshPeriod();
+
+        /// @brief refresh parameter Probability
+        void refreshProbability();
+
+    private:
+        /// @brief pointer to AttributesEditor parent
+        AttributesEditor* myAttributesEditorParent = nullptr;
+
+        /// @brief Radio button for 'end' attribute
+        FXRadioButton* myAttributeEndRadioButton = nullptr;
+
+        /// @brief textField for 'end' attribute
+        FXTextField* myValueEndTextField = nullptr;
+
+        /// @brief Radio button for 'number' attribute
+        FXRadioButton* myAttributeNumberRadioButton = nullptr;
+
+        /// @brief textField for 'number' attribute
+        FXTextField* myValueNumberTextField = nullptr;
+
+        /// @brief Radio button for 'VehsPerHour' attribute
+        FXRadioButton* myAttributeVehsPerHourRadioButton = nullptr;
+
+        /// @brief textField for 'VehsPerHour' attribute
+        FXTextField* myValueVehsPerHourTextField = nullptr;
+
+        /// @brief Radio button for 'period' attribute
+        FXRadioButton* myAttributePeriodRadioButton = nullptr;
+
+        /// @brief textField for 'period' attribute
+        FXTextField* myValuePeriodTextField = nullptr;
+
+        /// @brief Radio button for 'probability' attribute
+        FXRadioButton* myAttributeProbabilityRadioButton = nullptr;
+
+        /// @brief textField for 'probability' attribute
+        FXTextField* myValueProbabilityTextField = nullptr;
     };
 
     // ===========================================================================

@@ -259,6 +259,12 @@ GNERouteProbe::setAttribute(SumoXMLAttr key, const std::string& value, GNEUndoLi
 }
 
 
+bool 
+GNERouteProbe::isAttributeEnabled(SumoXMLAttr /* key */) const {
+    return true;
+}
+
+
 std::string
 GNERouteProbe::getPopUpID() const {
     return getTagStr();

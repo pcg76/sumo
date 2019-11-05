@@ -64,6 +64,7 @@ public:
         FXColorWell* myColorWell;
         FXColorWell* myBGColorWell;
         FXCheckButton* myConstSizeCheck;
+        FXMatrix* myMatrix0;
     };
 
     class SizePanel {
@@ -232,6 +233,9 @@ private:
     /// @brief load window position and size from the registry
     void loadWindowSize();
 
+    /// @brief reload known vehicle parameters
+    void updateVehicleParams();
+
 private:
     /// @brief The parent view (which settings are changed)
     GUISUMOAbstractView* myParent;
@@ -297,14 +301,18 @@ private:
     FXRealSpinner* myLaneWidthUpscaleDialer;
     FXRealSpinner* myLaneMinWidthDialer;
 
+    // Vehicles
     MFXIconComboBox* myVehicleColorMode, *myVehicleShapeDetail;
     FXVerticalFrame* myVehicleColorSettingFrame;
     std::vector<FXColorWell*> myVehicleColors;
     std::vector<FXRealSpinner*> myVehicleThresholds;
     std::vector<FXButton*> myVehicleButtons;
     FXCheckButton* myVehicleColorInterpolation;
-    FXCheckButton* myShowBlinker, *myShowMinGap, *myShowBrakeGap, *myShowBTRange; /* *myShowLaneChangePreference,*/
+    FXCheckButton* myShowBlinker, *myShowMinGap, *myShowBrakeGap, *myShowBTRange, *myShowRouteIndex; /* *myShowLaneChangePreference,*/
+    FXComboBox* myVehicleParamKey;
+    FXComboBox* myVehicleTextParamKey;
 
+    // Persons
     MFXIconComboBox* myPersonColorMode, *myPersonShapeDetail;
     FXVerticalFrame* myPersonColorSettingFrame;
     std::vector<FXColorWell*> myPersonColors;
@@ -312,6 +320,7 @@ private:
     std::vector<FXButton*> myPersonButtons;
     FXCheckButton* myPersonColorInterpolation;
 
+    // Containers
     MFXIconComboBox* myContainerColorMode, *myContainerShapeDetail;
     FXVerticalFrame* myContainerColorSettingFrame;
     std::vector<FXColorWell*> myContainerColors;
@@ -355,7 +364,7 @@ private:
                *myJunctionIndexPanel, *myTLIndexPanel,
                *myJunctionNamePanel, *myInternalJunctionNamePanel,
                *myTLSPhaseIndexPanel,
-               *myVehicleNamePanel, *myVehicleValuePanel,
+               *myVehicleNamePanel, *myVehicleValuePanel, *myVehicleTextPanel,
                *myPersonNamePanel, *myPersonValuePanel,
                *myContainerNamePanel,
                *myAddNamePanel, *myAddFullNamePanel, *myPOINamePanel, *myPolyNamePanel, *myPOITypePanel, *myPolyTypePanel;

@@ -657,6 +657,8 @@ TraCITestClient::testAPI() {
     answerLog << "    effort: " << edge.getEffort(edgeID, 0) << "\n";
     answerLog << "    laneNumber: " << edge.getLaneNumber(edgeID) << "\n";
     answerLog << "    streetName: " << edge.getStreetName(edgeID) << "\n";
+    edge.setMaxSpeed(edgeID, 42);
+    answerLog << "    maxSpeed: " << lane.getMaxSpeed(edgeID+"_0") << "\n";
 
     // lane
     answerLog << "  lane:\n";
@@ -692,6 +694,8 @@ TraCITestClient::testAPI() {
     } catch (libsumo::TraCIException& e) {
         answerLog << "    caught TraCIException(" << e.what() << ")\n";
     }
+    lane.setMaxSpeed(laneID, 42);
+    answerLog << "    maxSpeed: " << lane.getMaxSpeed(laneID) << "\n";
     // poi
     answerLog << "  POI:\n";
     answerLog << "    getIDList: " << joinToString(poi.getIDList(), " ") << "\n";
@@ -878,6 +882,7 @@ TraCITestClient::testAPI() {
     answerLog << "    busStopWaiting: " << simulation.getBusStopWaiting("bs1") << "\n";
     answerLog << "    busStopWaitingIDs: " << joinToString(simulation.getBusStopWaitingIDList("bs1"), " ") << "\n";
     answerLog << "    subscribe to road and pos of vehicle '1':\n";
+    answerLog << "    findRoute: " << joinToString(simulation.findRoute("e_m5", "e_m4").edges, " ") << "\n";
     std::vector<int> vars;
     vars.push_back(libsumo::VAR_ROAD_ID);
     vars.push_back(libsumo::VAR_LANEPOSITION);

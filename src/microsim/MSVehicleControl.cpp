@@ -93,7 +93,7 @@ MSVehicleControl::~MSVehicleControl() {
     myVTypeDistDict.clear();
     // delete vehicle types
     for (VTypeDictType::iterator i = myVTypeDict.begin(); i != myVTypeDict.end(); ++i) {
-        //delete(*i).second;
+        delete(*i).second;
     }
     myVTypeDict.clear();
 }
@@ -105,7 +105,12 @@ MSVehicleControl::buildVehicle(SUMOVehicleParameter* defs,
                                const bool ignoreStopErrors, const bool fromRouteFile) {
     myLoadedVehNo++;
     MSVehicle* built = new MSVehicle(defs, route, type, type->computeChosenSpeedDeviation(fromRouteFile ? MSRouteHandler::getParsingRNG() : nullptr));
-    built->addStops(ignoreStopErrors);
+    try {
+        built->addStops(ignoreStopErrors);
+    } catch (ProcessError&) {
+        delete built;
+        throw;
+    }
     MSNet::getInstance()->informVehicleStateListener(built, MSNet::VEHICLE_STATE_BUILT);
     return built;
 }

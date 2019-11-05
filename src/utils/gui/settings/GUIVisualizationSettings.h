@@ -481,6 +481,10 @@ public:
 
     /// @brief key for coloring by edge parameter
     std::string edgeParam, laneParam;
+    /// @brief key for coloring by vehicle parameter
+    std::string vehicleParam;
+    /// @brief key for rendering textual parameter
+    std::string vehicleTextParam;
 
     /// @brief key for coloring by edgeData
     std::string edgeData;
@@ -510,11 +514,14 @@ public:
     /// @brief Information whether the communication range shall be drawn
     bool showBTRange;
 
+    /// @brief Information whether the route index should be shown
+    bool showRouteIndex;
+
     // Setting bundles for controling the size of the drawn vehicles
     GUIVisualizationSizeSettings vehicleSize;
 
     // Setting bundles for optional drawing vehicle names or color value
-    GUIVisualizationTextSettings vehicleName, vehicleValue;
+    GUIVisualizationTextSettings vehicleName, vehicleValue, vehicleText;
 
     /// @}
 
@@ -655,6 +662,7 @@ public:
     /// @brief scheme names
     static const std::string SCHEME_NAME_EDGE_PARAM_NUMERICAL;
     static const std::string SCHEME_NAME_LANE_PARAM_NUMERICAL;
+    static const std::string SCHEME_NAME_PARAM_NUMERICAL;
     static const std::string SCHEME_NAME_EDGEDATA_NUMERICAL;
     static const std::string SCHEME_NAME_SELECTION;
     static const std::string SCHEME_NAME_TYPE;

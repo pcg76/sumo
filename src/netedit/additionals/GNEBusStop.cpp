@@ -327,6 +327,12 @@ GNEBusStop::isValid(SumoXMLAttr key, const std::string& value) {
     }
 }
 
+
+bool 
+GNEBusStop::isAttributeEnabled(SumoXMLAttr /* key */) const {
+    return true;
+}
+
 // ===========================================================================
 // private
 // ===========================================================================

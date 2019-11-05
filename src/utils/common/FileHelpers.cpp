@@ -32,6 +32,7 @@
 #include <unistd.h>
 #endif
 #include <fstream>
+#include <sys/stat.h>
 #include "FileHelpers.h"
 #include "StringTokenizer.h"
 #include "MsgHandler.h"
@@ -57,6 +58,15 @@ FileHelpers::isReadable(std::string path) {
         return false;
     }
     return access(path.c_str(), R_OK) == 0;
+}
+
+bool
+FileHelpers::isDirectory(std::string path) {
+    struct stat fileInfo;
+    if (stat(path.c_str(), &fileInfo) != 0) {
+        throw ProcessError("Cannot get file attributes for file '" + path + "'!");
+    }
+    return (fileInfo.st_mode & S_IFMT) == S_IFDIR;
 }
 
 // ---------------------------------------------------------------------------
@@ -85,10 +95,10 @@ FileHelpers::addExtension(const std::string& path, const std::string& extension)
         return path + extension;
     } else {
         // declare two reverse iterator for every string
-        std::string::const_reverse_iterator it_path = path.crbegin();
-        std::string::const_reverse_iterator it_extension = extension.crbegin();
+        std::string::const_reverse_iterator it_path = path.rbegin();
+        std::string::const_reverse_iterator it_extension = extension.rbegin();
         // iterate over extension and compare both characters
-        while (it_extension != extension.crend()) {
+        while (it_extension != extension.rend()) {
             // if both characters are different, then return path + extension
             if (*it_path != *it_extension) {
                 return path + extension;

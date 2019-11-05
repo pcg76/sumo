@@ -161,6 +161,12 @@ GNEClosingReroute::isValid(SumoXMLAttr key, const std::string& value) {
 }
 
 
+bool 
+GNEClosingReroute::isAttributeEnabled(SumoXMLAttr /* key */) const {
+    return true;
+}
+
+
 std::string
 GNEClosingReroute::getPopUpID() const {
     return getTagStr();
