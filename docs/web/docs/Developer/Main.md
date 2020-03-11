@@ -32,7 +32,7 @@ permalink: /Developer/Main/
 - [Installing/Windows Build](../Installing/Windows_Build.md) -
   how to build on Windows
 - [Installing/MacOS Build](../Installing/MacOS_Build.md) - how to
-  build on MacOS X
+  build on MacOS
 - [Developer/Documentation Build](Documentation_Build.md) - how to build the
   documentation
 - [Developer/Nightly Build](Nightly_Build.md) - what
@@ -46,7 +46,7 @@ permalink: /Developer/Main/
 - [How To extend the vehicle class](How_To/Extend_Vehicles.md)
 - [How To implement an own car-following model](How_To/Car-Following_Model.md)
 - [How To implement a new device](How_To/Device.md)
-- [How To contribute to this wiki](../FAQ.md#how_do_i_contribute_to_the_wiki)
+- [How To contribute to this documentation](../FAQ.md#how_do_i_contribute_to_the_documentation)
 - [How to contribute to SUMO in general](../FAQ.md#how_can_i_contribute_to_sumo)
 
 ## Methods, Algorithms, and Subsystems

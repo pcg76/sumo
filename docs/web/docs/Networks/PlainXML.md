@@ -274,7 +274,7 @@ If a vehicle is braking in the simulation, the responsible foe vehicle
 Sometimes your network may contain nodes which are very close together
 forming a big cluster. This happens frequently when [Importing Networks from OpenStreetMap](../Networks/Import/OpenStreetMap.md).
 [NETCONVERT](../NETCONVERT.md) supports the option **--junctions.join** to find such
-clusters and join them into a big and well shaped junction. 
+clusters and join them into a big and well shaped junction. Junctions can also be joined manually with [NETEDIT](../NETEDIT.md#processing_menu_options). It is even possible to [undo joins](../NETEDIT.md#junction) that were computed automatically.
 
 ### Reasons for joining node clusters
 Within an intersection, special rules of traffic do apply. When modelling an intersection by a cluster of nodes, the edges within the cluster are regular roads where these rules cannot be applied. 
@@ -425,7 +425,7 @@ Let's list an edge's attributes again:
 | priority       | int                                   | The priority of the edge. Used for [\#Right-of-way](#right-of-way)-computation            |
 | length         | float                                 | The length of the edge in meter                                                     |
 | shape          | List of positions; each position is encoded in x,y or x,y,z in meters (do not separate the numbers with a space\!). | If the shape is given it should start and end with the positions of the from-node and to-node. Alternatively it can also start and end with the position where the edge leaves or enters the junction shape. This gives some control over the final junction shape. When using the option **--plain.extend-edge-shape** it is sufficient to supply inner geometry points and extend the shape with the starting and ending node positions automatically |
-| spreadType     | enum ( "right", "center" )                                                                                          | The description of how to spread the lanes; "center" spreads lanes to both directions of the shape, any other value will be interpreted as "right"  |
+| spreadType     | enum ( "right", "center", "roadCenter")                                                                                          | The description of how to compute lane geometry from edge geometry. See [SpreadType](#spreadtype)  |
 | allow          | list of vehicle classes               | List of permitted vehicle classes (see [access permissions](#road_access_permissions_allow_disallow))       |
 | disallow       | list of vehicle classes               | List of forbidden vehicle classes (see [access permissions](#road_access_permissions_allow_disallow))       |
 | width          | float                                 | lane width for all lanes of this edge in meters (used for visualization)                                    |
@@ -472,6 +472,13 @@ example for using types is described in the chapter [Type Descriptions](#type_de
 
 !!! caution
     There are some constraints about the streets' ids. They must not contain any of the following characters: '_' (underline - used for lane ids), '[' and ']' (used for enumerations), ' ' (space - used as list divider), '*' (star, used as wildcard), ':' (used as marker for internal lanes).
+
+## SpreadType
+Each edge has a geometry definition (which defaults to the straight-line between from-junction and to-junction position).
+The spreadType defines how to compute the lane geometry from the edge geometry:
+- **right** (default): The edge geometry is interpreted as the left side of the edge and lanes flare out to the right. This works well if edges in opposite directions have the same (or rather reversed) geometry.
+- **center**: The edge geometry is interpreted as the middle of the directional edge and lanes flare out symmetrically to both sides. This is appropriate for one-way edges
+- **roadCenter**: The edge geometry is interpreted as the middle of a bi-directional road. This works well when both directional edges have a different lane number.
 
 ## Road access permissions (allow, disallow)
 
@@ -813,7 +820,9 @@ Here, a connection from the edge's "*<FROM_EDGE_ID\>*" lane with the number *<IN
 | visibility     | float                                                                                                               | 4.5     | specifies the distance to the connection \[in m.\] below which an approaching vehicle has full sight of any other approaching vehicles on the connection's foe lanes (i.e. vehicle can accelerate if none are present). Note, that a too low visibility (<=0.1m.) will prevent vehicles from crossing a minor link. For major links the attribute has no effect, currently. |
 | speed          | float                                                                                                               | \-1     | specifies the maximum speed while moving across the intersection using this connection (in m/s). By default the mean speed of the edge before and after the connection is used. With the default value, the speed is set to the average of the incoming and outgoing lane or to a radius based limit if option **--junctions.limit-turn-speed** is set.                                                      |
 | shape          | List of positions; each position is encoded in x,y or x,y,z in meters (do not separate the numbers with a space\!). |         | specifies a custom shape for the internal lane(s) for this connection. By default an interpolated cubic spline is used.                                                                                                                                                                                                                                                      |
-| uncontrolled   | bool                                                                                                                | false   | if set to *true*, This connection will not be TLS-controlled despite its node being controlled.                                                                                                                                                                                                                                                                              |
+| uncontrolled   | bool  | false   | if set to *true*, This connection will not be TLS-controlled despite its node being controlled. |
+| allow     | list of vehicle classes    |    | set custom permissions independent of from-lane and to-lane permissions. |
+| disallow  | list of vehicle classes    |    | set custom permissions independent of from-lane and to-lane permissions. |
 
 If you only wish to **remove** a connection it may be convenient to use
 the following xml definition: `<delete from="<FROM_EDGE_ID>" to="<T0_EDGE_ID>"/>`. The attributes are the same as for the

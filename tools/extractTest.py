@@ -1,18 +1,21 @@
 #!/usr/bin/env python
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-# Copyright (C) 2009-2019 German Aerospace Center (DLR) and others.
-# This program and the accompanying materials
-# are made available under the terms of the Eclipse Public License v2.0
-# which accompanies this distribution, and is available at
-# http://www.eclipse.org/legal/epl-v20.html
-# SPDX-License-Identifier: EPL-2.0
+# Copyright (C) 2009-2020 German Aerospace Center (DLR) and others.
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License 2.0 which is available at
+# https://www.eclipse.org/legal/epl-2.0/
+# This Source Code may also be made available under the following Secondary
+# Licenses when the conditions for such availability set forth in the Eclipse
+# Public License 2.0 are satisfied: GNU General Public License, version 2
+# or later which is available at
+# https://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html
+# SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later
 
 # @file    extractTest.py
 # @author  Daniel Krajzewicz
 # @author  Jakob Erdmann
 # @author  Michael Behrisch
 # @date    2009-07-08
-# @version $Id$
 
 """
 Extract all files for a test case into a new dir.
@@ -226,24 +229,45 @@ for p in [
         haveConfig = False
         if app in ["dfrouter", "duarouter", "jtrrouter", "marouter", "netconvert",
                    "netgen", "netgenerate", "od2trips", "polyconvert", "sumo", "activitygen"]:
-            appOptions += ['--save-configuration', '%s.%scfg' %
-                           (nameBase, app[:4])]
             if app == "netgen":
                 # binary is now called differently but app still has the old name
                 app = "netgenerate"
             if options.verbose:
-                print(("calling %s for testPath '%s' with  options '%s'") %
+                print("calling %s for testPath '%s' with options '%s'" %
                       (checkBinary(app), testPath, " ".join(appOptions)))
             try:
-                haveConfig = subprocess.call([checkBinary(app)] + appOptions) == 0
+                haveConfig = subprocess.call([checkBinary(app)] + appOptions +
+                                             ['--save-configuration', '%s.%scfg' %
+                                              (nameBase, app[:4])]) == 0
             except OSError:
                 print("Executable %s not found, generating shell scripts instead of config." % app, file=sys.stderr)
             if not haveConfig:
-                appOptions[-2:] = ["bin/" + app]
+                appOptions.insert(0, "$SUMO_HOME/bin/" + app)
+        elif app == "tools":
+            for i, a in enumerate(appOptions):
+                if a.endswith(".py"):
+                    del appOptions[i:i+1]
+                    appOptions[0:0] = [os.environ.get("PYTHON", "python"), "$SUMO_HOME/" + a]
+                    break
+                if a.endswith(".jar"):
+                    del appOptions[i:i+1]
+                    appOptions[0:0] = ["java", "-jar", "$SUMO_HOME/" + a]
+                    break
+        elif app == "complex":
+            for i, a in enumerate(appOptions):
+                if a.endswith(".py"):
+                    if os.path.exists(join(testPath, os.path.basename(a))):
+                        a = os.path.basename(a)
+                    del appOptions[i:i+1]
+                    appOptions[0:0] = [os.environ.get("PYTHON", "python"), a]
+                    break
         if not haveConfig:
-            cmd = ["$SUMO_HOME/" + appOptions[-1]] + [o if " " not in o else "'%s'" % o for o in appOptions[:-1]]
+            if options.verbose:
+                print("generating shell scripts for testPath '%s' with call '%s'" %
+                      (testPath, " ".join(appOptions)))
+            cmd = [o if " " not in o else "'%s'" % o for o in appOptions]
             open(nameBase + ".sh", "w").write(" ".join(cmd))
-            cmd = ["%SUMO_HOME%/" + appOptions[-1]] + [o if " " not in o else '"%s"' % o for o in appOptions[:-1]]
+            cmd = [o.replace("$SUMO_HOME", "%SUMO_HOME%") if " " not in o else '"%s"' % o for o in appOptions]
             open(nameBase + ".bat", "w").write(" ".join(cmd))
         os.chdir(oldWorkDir)
     if options.python_script:

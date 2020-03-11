@@ -1,11 +1,15 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2013-2019 German Aerospace Center (DLR) and others.
-// This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v2.0
-// which accompanies this distribution, and is available at
-// http://www.eclipse.org/legal/epl-v20.html
-// SPDX-License-Identifier: EPL-2.0
+// Copyright (C) 2013-2020 German Aerospace Center (DLR) and others.
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0/
+// This Source Code may also be made available under the following Secondary
+// Licenses when the conditions for such availability set forth in the Eclipse
+// Public License 2.0 are satisfied: GNU General Public License, version 2
+// or later which is available at
+// https://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html
+// SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later
 /****************************************************************************/
 /// @file    MSDevice_Bluelight.cpp
 /// @author  Daniel Krajzewicz
@@ -13,15 +17,10 @@
 /// @author  Jakob Erdmann
 /// @author  Laura Bieker
 /// @date    01.06.2017
-/// @version $Id$
 ///
 // A device for emergency vehicle. The behaviour of other traffic participants will be triggered with this device.
 // For example building a rescue lane.
 /****************************************************************************/
-
-// ===========================================================================
-// included modules
-// ===========================================================================
 #include <config.h>
 
 #include <utils/common/StringUtils.h>
@@ -147,6 +146,22 @@ MSDevice_Bluelight::notifyMove(SUMOTrafficObject& veh, double /* oldPos */,
                 // emergency vehicles should not react
                 continue;
             }
+            const int numLanes = (int)veh2->getEdge()->getLanes().size();
+            //make sure that vehicle are still building the a rescue lane
+            if (influencedVehicles.count(veh2->getID()) > 0) {
+               //Vehicle gets a new Vehicletype to change the alignment and the lanechange options
+                MSVehicleType& t = static_cast<MSVehicle*>(veh2)->getSingularType();
+                //Setting the lateral alignment to build a rescue lane
+                if (veh2->getLane()->getIndex() == numLanes - 1) {
+                    t.setPreferredLateralAlignment(LATALIGN_LEFT);
+                    // the alignement is changet to left for the vehicle std::cout << "New alignment to left for vehicle: " << veh2->getID() << " " << veh2->getVehicleType().getPreferredLateralAlignment() << "\n";
+                }
+                else {
+                    t.setPreferredLateralAlignment(LATALIGN_RIGHT);
+                    // the alignement is changet to right for the vehicle std::cout << "New alignment to right for vehicle: " << veh2->getID() << " " << veh2->getVehicleType().getPreferredLateralAlignment() << "\n";
+                }
+            }
+
             double distanceDelta = veh.getPosition().distanceTo(veh2->getPosition());
             //emergency vehicle has to slow down when entering the resuce lane
             if (distanceDelta <= 10 && veh.getID() != veh2->getID() && influencedVehicles.count(veh2->getID()) > 0 && veh2->getSpeed() < 1) {
@@ -166,9 +181,13 @@ MSDevice_Bluelight::notifyMove(SUMOTrafficObject& veh, double /* oldPos */,
 
                 //other vehicle should not use the rescue lane so they should not make any lane changes
                 lanechange.setLaneChangeMode(1605);//todo change lane back
-                const int numLanes = (int)veh2->getEdge()->getLanes().size();
+                //const int numLanes = (int)veh2->getEdge()->getLanes().size();
                 // the vehicles should react according to the distance to the emergency vehicle taken from real world data
-                if (reaction < (distanceDelta * -1.6 + 100) / 100) {
+                double reactionProb = 0.189; // todo works only for one second steps
+                if (distanceDelta < 12.5) {
+                    reactionProb = 0.577;
+                }
+                if (reaction < reactionProb) {
                     influencedVehicles.insert(static_cast<std::string>(veh2->getID()));
                     influencedTypes.insert(std::make_pair(static_cast<std::string>(veh2->getID()), veh2->getVehicleType().getID()));
 
@@ -232,13 +251,12 @@ MSDevice_Bluelight::notifyLeave(SUMOTrafficObject& veh, double /*lastPos*/, MSMo
 
 
 void
-MSDevice_Bluelight::generateOutput() const {
-    if (OptionsCont::getOptions().isSet("tripinfo-output")) {
-        OutputDevice& os = OutputDevice::getDeviceByOption("tripinfo-output");
-        os.openTag("example_device");
-        os.writeAttr("customValue1", toString(myCustomValue1));
-        os.writeAttr("customValue2", toString(myCustomValue2));
-        os.closeTag();
+MSDevice_Bluelight::generateOutput(OutputDevice* tripinfoOut) const {
+    if (tripinfoOut != nullptr) {
+        tripinfoOut->openTag("example_device");
+        tripinfoOut->writeAttr("customValue1", toString(myCustomValue1));
+        tripinfoOut->writeAttr("customValue2", toString(myCustomValue2));
+        tripinfoOut->closeTag();
     }
 }
 
@@ -272,4 +290,3 @@ MSDevice_Bluelight::setParameter(const std::string& key, const std::string& valu
 
 
 /****************************************************************************/
-

@@ -1,28 +1,25 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2002-2019 German Aerospace Center (DLR) and others.
-// This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v2.0
-// which accompanies this distribution, and is available at
-// http://www.eclipse.org/legal/epl-v20.html
-// SPDX-License-Identifier: EPL-2.0
+// Copyright (C) 2002-2020 German Aerospace Center (DLR) and others.
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0/
+// This Source Code may also be made available under the following Secondary
+// Licenses when the conditions for such availability set forth in the Eclipse
+// Public License 2.0 are satisfied: GNU General Public License, version 2
+// or later which is available at
+// https://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html
+// SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later
 /****************************************************************************/
 /// @file    MSLink.h
 /// @author  Daniel Krajzewicz
 /// @author  Jakob Erdmann
 /// @author  Michael Behrisch
 /// @date    Sept 2002
-/// @version $Id$
 ///
 // A connnection between lanes
 /****************************************************************************/
-#ifndef MSLink_h
-#define MSLink_h
-
-
-// ===========================================================================
-// included modules
-// ===========================================================================
+#pragma once
 #include <config.h>
 
 #include <vector>
@@ -102,7 +99,8 @@ public:
                                       const SUMOTime _arrivalTimeBraking,
                                       const double _arrivalSpeedBraking,
                                       const SUMOTime _waitingTime,
-                                      const double _dist
+                                      const double _dist,
+                                      const double _speed
                                      ) :
             arrivalTime(_arrivalTime), leavingTime(_leavingTime),
             arrivalSpeed(_arrivalSpeed), leaveSpeed(_leaveSpeed),
@@ -110,7 +108,8 @@ public:
             arrivalTimeBraking(_arrivalTimeBraking),
             arrivalSpeedBraking(_arrivalSpeedBraking),
             waitingTime(_waitingTime),
-            dist(_dist) {
+            dist(_dist),
+            speed(_speed) {
         }
 
         /// @brief The time the vehicle's front arrives at the link
@@ -131,6 +130,8 @@ public:
         const SUMOTime waitingTime;
         /// @brief The distance up to the current link
         const double dist;
+        /// @brief The current speed
+        const double speed;
 
     private:
         /// invalidated assignment operator
@@ -138,6 +139,8 @@ public:
 
     };
 
+    typedef std::map<const SUMOVehicle*, const ApproachingVehicleInformation, ComparatorNumericalIdLess> ApproachInfos;
+    typedef std::vector<const SUMOVehicle*> BlockingFoes;
 
     /** @brief Constructor for simulation which uses internal lanes
      *
@@ -206,7 +209,7 @@ public:
     ApproachingVehicleInformation getApproaching(const SUMOVehicle* veh) const;
 
     /// @brief return all approaching vehicles
-    const std::map<const SUMOVehicle*, const ApproachingVehicleInformation, ComparatorNumericalIdLess>& getApproaching() const {
+    const ApproachInfos& getApproaching() const {
         return myApproachingVehicles;
     }
 
@@ -220,9 +223,9 @@ public:
     bool opened(SUMOTime arrivalTime, double arrivalSpeed, double leaveSpeed, double vehicleLength,
                 double impatience, double decel, SUMOTime waitingTime,
                 double posLat = 0,
-                std::vector<const SUMOVehicle*>* collectFoes = 0,
+                BlockingFoes* collectFoes = nullptr,
                 bool ignoreRed = false,
-                const SUMOVehicle* ego = 0) const;
+                const SUMOVehicle* ego = nullptr) const;
 
     /** @brief Returns the information whether this link is blocked
      * Valid after the vehicles have set their requests
@@ -240,7 +243,7 @@ public:
      **/
     bool blockedAtTime(SUMOTime arrivalTime, SUMOTime leaveTime, double arrivalSpeed, double leaveSpeed,
                        bool sameTargetLane, double impatience, double decel, SUMOTime waitingTime,
-                       std::vector<const SUMOVehicle*>* collectFoes = 0, const SUMOVehicle* ego = 0) const;
+                       BlockingFoes* collectFoes = nullptr, const SUMOVehicle* ego = nullptr) const;
 
 
     bool isBlockingAnyone() const {
@@ -261,6 +264,12 @@ public:
      * @return Whether a foe of this link is approaching
      */
     bool hasApproachingFoe(SUMOTime arrivalTime, SUMOTime leaveTime, double speed, double decel) const;
+
+    /** @brief get the foe vehicle that is closest to the intersection or nullptr along with the foe link
+     * This function is used for finding circular deadlock at right_before_left junctions
+     * @param[in] wrapAround The link on which the ego vehicle wants to enter the junction
+    */
+    std::pair<const SUMOVehicle*, const MSLink*>  getFirstApproachingFoe(const MSLink* wrapAround) const;
 
     MSJunction* getJunction() const {
         return myJunction;
@@ -349,6 +358,10 @@ public:
         return myState == LINKSTATE_TL_YELLOW_MINOR || myState == LINKSTATE_TL_YELLOW_MAJOR;
     }
 
+    inline bool haveGreen() const {
+        return myState == LINKSTATE_TL_GREEN_MAJOR || myState == LINKSTATE_TL_GREEN_MINOR;
+    }
+
     inline bool isTLSControlled() const {
         return myLogic != 0;
     }
@@ -392,6 +405,9 @@ public:
 
     /// @brief whether this is a link past an internal junction which currently has priority
     bool lastWasContMajor() const;
+
+    /// @brief whether this is a link past an internal junction which currently has green major
+    bool lastWasContMajorGreen() const;
 
     /** @brief Returns the cumulative length of all internal lanes after this link
      *  @return sum of the lengths of all internal lanes following this link
@@ -441,7 +457,7 @@ public:
     /// @brief return the speed at which ego vehicle must approach the zipper link
     double getZipperSpeed(const MSVehicle* ego, const double dist, double vSafe,
                           SUMOTime arrivalTime,
-                          std::vector<const SUMOVehicle*>* collectFoes) const;
+                          BlockingFoes* collectFoes) const;
 
     /// @brief return the via lane if it exists and the lane otherwise
     MSLane* getViaLaneOrLane() const;
@@ -532,10 +548,7 @@ private:
         return (leaderSpeed * leaderSpeed / leaderDecel) <= (followerSpeed * followerSpeed / followerDecel);
     }
 
-    /// @brief returns whether the given lane may still be occupied by a vehicle currently on it
-    static bool maybeOccupied(MSLane* lane);
-
-    /// @brief whether fllower could stay behind leader (possibly by braking)
+    /// @brief whether follower could stay behind leader (possibly by braking)
     static bool couldBrakeForLeader(double followDist, double leaderDist, const MSVehicle* follow, const MSVehicle* leader);
 
     MSLink* computeParallelLink(int direction);
@@ -558,7 +571,7 @@ private:
     /// @brief The lane approaching this link
     MSLane* myLaneBefore;
 
-    std::map<const SUMOVehicle*, const ApproachingVehicleInformation, ComparatorNumericalIdLess> myApproachingVehicles;
+    ApproachInfos myApproachingVehicles;
     std::set<MSLink*> myBlockedFoeLinks;
 
     /// @brief The position within this respond
@@ -664,9 +677,3 @@ private:
     MSLink& operator=(const MSLink& s);
 
 };
-
-
-#endif
-
-/****************************************************************************/
-

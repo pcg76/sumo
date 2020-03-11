@@ -1,28 +1,25 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2010-2019 German Aerospace Center (DLR) and others.
-// This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v2.0
-// which accompanies this distribution, and is available at
-// http://www.eclipse.org/legal/epl-v20.html
-// SPDX-License-Identifier: EPL-2.0
+// Copyright (C) 2010-2020 German Aerospace Center (DLR) and others.
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0/
+// This Source Code may also be made available under the following Secondary
+// Licenses when the conditions for such availability set forth in the Eclipse
+// Public License 2.0 are satisfied: GNU General Public License, version 2
+// or later which is available at
+// https://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html
+// SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later
 /****************************************************************************/
 /// @file    MSBaseVehicle.h
 /// @author  Daniel Krajzewicz
 /// @author  Michael Behrisch
 /// @author  Jakob Erdmann
 /// @date    Mon, 8 Nov 2010
-/// @version $Id$
 ///
 // A base class for vehicle implementations
 /****************************************************************************/
-#ifndef MSBaseVehicle_h
-#define MSBaseVehicle_h
-
-
-// ===========================================================================
-// included modules
-// ===========================================================================
+#pragma once
 #include <config.h>
 
 #include <iostream>
@@ -40,6 +37,7 @@
 class MSLane;
 class MSDevice_Transportable;
 class MSVehicleDevice;
+class MSEdgeWeightsStorage;
 
 
 // ===========================================================================
@@ -80,14 +78,20 @@ public:
         return true;
     }
 
-    /// Returns the name of the vehicle
-    const std::string& getID() const;
+    /// @brief set the id (inherited from Named but forbidden for vehicles)
+    void setID(const std::string& newID);
 
     /** @brief Returns the vehicle's parameter (including departure definition)
      *
      * @return The vehicle's parameter
      */
     const SUMOVehicleParameter& getParameter() const;
+
+    /** @brief Returns the vehicle's emission model parameter
+     *
+     * @return The vehicle's emission parameters
+     */
+    const std::map<int, double>* getEmissionParameters() const;
 
     /// @brief replace the vehicle parameter (deleting the old one)
     void replaceParameter(const SUMOVehicleParameter* newParameter);
@@ -284,6 +288,15 @@ public:
         myArrivalPos = arrivalPos;
     }
 
+    /** @brief Called when the vehicle is removed from the network.
+     *
+     * Moves along work reminders and
+     *  informs all devices about quitting. Calls "leaveLane" then.
+     *
+     * @param[in] reason why the vehicle leaves (reached its destination, parking, teleport)
+     */
+    virtual void onRemovalFromNet(const MSMoveReminder::Notification /*reason*/) {}
+
     /** @brief Returns whether this vehicle has already departed
      */
     bool hasDeparted() const;
@@ -299,6 +312,10 @@ public:
     /// @brief reset index of edge within route
     void resetRoutePosition(int index, DepartLaneDefinition departLaneProcedure);
 
+    /** @brief Returns the distance that was already driven by this vehicle
+     * @return the distance driven [m]
+     */
+    double getOdometer() const;
 
     /** @brief Returns the number of new routes this vehicle got
      * @return the number of new routes this vehicle got
@@ -333,22 +350,14 @@ public:
         return myDevices;
     }
 
-    /** @brief Adds a person to this vehicle
-     *
-     * The default implementation does nothing since persons are not supported by default
-     *
-     * @param[in] person The person to add
-     */
-    virtual void addPerson(MSTransportable* person);
+    /// @brief whether the given transportable is allowed to board this vehicle
+    bool allowsBoarding(MSTransportable* t) const;
 
-
-    /** @brief Adds a container to this vehicle
+    /** @brief Adds a person or container to this vehicle
      *
-     * The default implementation does nothing since containers are not supported by default
-     *
-     * @param[in] container The container to add
+     * @param[in] transportable The person/container to add
      */
-    virtual void addContainer(MSTransportable* container);
+    virtual void addTransportable(MSTransportable* transportable);
 
     /// @brief removes a person or container
     void removeTransportable(MSTransportable* t);
@@ -359,6 +368,8 @@ public:
     /// @brief retrieve riding containers
     const std::vector<MSTransportable*>& getContainers() const;
 
+    /// @brief returns whether the vehicle serves a public transport line that serves the given stop
+    bool isLineStop(double position) const;
 
     /** @brief Validates the current or given route
      * @param[out] msg Description why the route is not valid (if it is the case)
@@ -471,6 +482,9 @@ public:
         return false;
     }
 
+    /// @brief @return The index of the vehicle's associated RNG
+    int getRNGIndex() const;
+
     /// @brief @return The vehicle's associated RNG
     std::mt19937* getRNG() const;
 
@@ -484,6 +498,151 @@ public:
 
     const MSDevice_Transportable* getContainerDevice() const {
         return myContainerDevice;
+    }
+
+
+    /// @name Emission retrieval
+    //@{
+
+    /** @brief Returns CO2 emission of the current state
+     * @return The current CO2 emission
+     */
+    double getCO2Emissions() const;
+
+
+    /** @brief Returns CO emission of the current state
+     * @return The current CO emission
+     */
+    double getCOEmissions() const;
+
+
+    /** @brief Returns HC emission of the current state
+     * @return The current HC emission
+     */
+    double getHCEmissions() const;
+
+
+    /** @brief Returns NOx emission of the current state
+     * @return The current NOx emission
+     */
+    double getNOxEmissions() const;
+
+
+    /** @brief Returns PMx emission of the current state
+     * @return The current PMx emission
+     */
+    double getPMxEmissions() const;
+
+
+    /** @brief Returns fuel consumption of the current state
+    * @return The current fuel consumption
+    */
+    double getFuelConsumption() const;
+
+
+    /** @brief Returns electricity consumption of the current state
+    * @return The current electricity consumption
+    */
+    double getElectricityConsumption() const;
+
+    /** @brief Returns actual state of charge of battery (Wh)
+    * RICE_CHECK: This may be a misnomer, SOC is typically percentage of the maximum battery capacity.
+    * @return The actual battery state of charge
+    */
+    double getStateOfCharge() const;
+
+    /** @brief Returns actual current (A) of ElecHybrid device
+    * RICE_CHECK: Is this the current consumed from the overhead wire or the current driving the poweertrain of the vehicle?
+    * @return The current of ElecHybrid device
+    */
+    double getElecHybridCurrent() const;
+
+    /** @brief Returns noise emissions of the current state
+     * @return The noise produced
+     */
+    double getHarmonoise_NoiseEmissions() const;
+    //@}
+
+    /** @class Influencer
+      * @brief Changes the wished vehicle speed / lanes
+      *
+      * The class is used for passing velocities or velocity profiles obtained via TraCI to the vehicle.
+      * The speed adaptation is controlled by the stored speedTimeLine
+      * Additionally, the variables myConsiderSafeVelocity, myConsiderMaxAcceleration, and myConsiderMaxDeceleration
+      * control whether the safe velocity, the maximum acceleration, and the maximum deceleration
+      * have to be regarded.
+      *
+      * Furthermore this class is used to affect lane changing decisions according to
+      * LaneChangeMode and any given laneTimeLine
+      */
+    class BaseInfluencer {
+    public:
+        /// @brief Constructor
+        BaseInfluencer();
+
+        /// @brief Destructor
+        virtual ~BaseInfluencer() {}
+
+        /// @brief Static initalization
+        static void init();
+        /// @brief Static cleanup
+        static void cleanup();
+
+
+        /// @brief return the current routing mode
+        int getRoutingMode() const {
+            return myRoutingMode;
+        }
+
+        /** @brief Sets routing behavior
+         * @param[in] value an enum value controlling the different modes
+         */
+        void setRoutingMode(int value) {
+            myRoutingMode = value;
+        }
+
+
+        SUMOAbstractRouter<MSEdge, SUMOVehicle>& getRouterTT(const int rngIndex, SUMOVehicleClass svc) const;
+
+    protected:
+        ///@brief routing mode (see TraCIConstants.h)
+        int myRoutingMode;
+
+    };
+
+
+
+    /** @brief Returns the velocity/lane influencer
+     *
+     * If no influencer was existing before, one is built, first
+     * @return Reference to this vehicle's speed influencer
+     */
+    virtual BaseInfluencer& getBaseInfluencer() = 0;
+
+    virtual const BaseInfluencer* getBaseInfluencer() const = 0;
+
+    virtual bool hasInfluencer() const  = 0;
+
+    
+    /** @brief Returns the vehicle's internal edge travel times/efforts container
+     *
+     * If the vehicle does not have such a container, it is built.
+     * @return The vehicle's knowledge about edge weights
+     */
+    const MSEdgeWeightsStorage& getWeightsStorage() const;
+    MSEdgeWeightsStorage& getWeightsStorage();
+
+    /** @brief Returns the leader of the vehicle looking for a fixed distance.
+     *
+     * If the distance is not given it is calculated from the brake gap.
+     * The gap returned does not include the minGap.
+     * @param dist    up to which distance to look for a leader
+     * @return The leading vehicle together with the gap; (0, -1) if no leader was found.
+     */
+    virtual std::pair<const MSVehicle* const, double> getLeader(double dist = 0) const {
+        UNUSED_PARAMETER(dist);
+        WRITE_WARNING("getLeader not yet implemented for meso");
+        return std::make_pair(nullptr, -1);
     }
 
 protected:
@@ -550,6 +709,12 @@ protected:
     /// @brief The number of reroutings
     int myNumberReroutes;
 
+    /// @brief The offset when adding route stops with 'until' on route replacement
+    SUMOTime myStopUntilOffset;
+
+    /// @brief A simple odometer to keep track of the length of the route already driven
+    double myOdometer;
+
     /* @brief magic value for undeparted vehicles
      * @note: in previous versions this was -1
      */
@@ -559,6 +724,12 @@ protected:
 
 private:
     const NumericalID myNumericalID;
+
+    /* @brief The vehicle's knowledge about edge efforts/travel times; @see MSEdgeWeightsStorage
+     * @note member is initialized on first access */
+    mutable MSEdgeWeightsStorage* myEdgeWeights;
+
+    MSEdgeWeightsStorage& _getWeightsStorage() const;
 
     static NumericalID myCurrentNumericalIndex;
 
@@ -583,7 +754,3 @@ private:
 
 
 };
-
-#endif
-
-/****************************************************************************/

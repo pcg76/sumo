@@ -1,6 +1,6 @@
 <hTitles >Simulation of Urban MObility<hr style="border: 0.5px solid #338033;"></hTitles>
 
-!!! note2 "SUMO User Conference 2020"
+!!! conference "SUMO User Conference 2020"
     The [SUMO User Conference 2020](http://sumo.dlr.de/2020/) takes place **May, 11-13, 2020** in Berlin.
 
 <span style="float: right;">![](https://sumo.dlr.de/w/images/thumb/d/de/Eclipse_foundation_logo.jpg/250px-Eclipse_foundation_logo.jpg)</span>
@@ -91,6 +91,8 @@ This Documentation is continuously updated and always refers to the latest devel
 - [iTetris](https://www.ict-itetris.eu/)
 
     connects SUMO to ns3, available here.
+    
+ - [ocit2SUMO](https://github.com/DLR-TS/sumo-ocit) Generate traffic light signal plans from OCIT® data.
 
 **Commercial Extensions**
 

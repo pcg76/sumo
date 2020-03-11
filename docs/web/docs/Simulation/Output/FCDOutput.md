@@ -96,34 +96,37 @@ vehicle.
 
 ## Filtering / Restricting Output
 
-- output can be restricted to specific vehicle types or vehicle ids by
-  [controlling the set of vehicles that are
-  equipped](../../Definition_of_Vehicles,_Vehicle_Types,_and_Routes.md#devices)
-  with the **fcd**-device. The following example restricts output to a
-  single vehicle called *ego*:
+!!! caution
+    The generated output files can become quite large. To write [gzipped](https://en.wikipedia.org/wiki/Gzip) output files, simply name the output file with an `.gz` extension.
 
+### Restricting the set of vehicles that generate output
+Output can be restricted to specific vehicle types or vehicle ids by [controlling the set of vehicles that are equipped](../../Definition_of_Vehicles,_Vehicle_Types,_and_Routes.md#devices)   with the **fcd**-device. The following example restricts output to a
+  single vehicle called *ego*:
 ```
 --device.fcd.explicit ego
 ```
 
-
-- output can be restricted to a specific set of edges by loading a
-  selecting of edges from a file with option **--fcd-output.filter-edges.input-file** {{DT_FILE}}. The file format for
-  this is the same as the one when saving selections in
-  [NETEDIT](../../NETEDIT.md):
-
+### Restricting the locations
+Output can be restricted to a specific set of edges by loading a list of edges from a file with option **--fcd-output.filter-edges.input-file** {{DT_FILE}}. The file format for
+this is the same as the one when saving selections in  [NETEDIT](../../NETEDIT.md):
 ```
 edge:id1
 edge:id2
 ...
 ```
 
+### Restricting output by sensor range
+When not all vehicles are equipped with an **fcd**-device, other ehicles and persons in a radius around the equipped vehicles can be included in the output by setting option **--device.fcd.radius** to the desired range in m.
+
 ## Further Options
 
-- using the option **--fcd-output.geo** will toggle output coordinates to WGS84 (for
+- **--fcd-output.geo** will toggle output coordinates to WGS84 (for
   geo-referenced networks)
-- using the option **--fcd-output.signals** will add [signal state
+- **--fcd-output.signals** will add [signal state
   information](../../TraCI/Vehicle_Signalling.md) to the output
+- **--fcd-output.distance** will add [kilometrage](../Railways.md#kilometrage-mileage-chainage) information to the output
+- **--fcd-output.acceleration** will add acceleration data to the output (also lateral acceleration when using the [sublane model](../SublaneModel.md)
+- **--fcd-output.params KEY1,KEY2,...** adds generic parameters](Simulation/GenericParameters.md) to the output
 
 ## NOTES
 

@@ -1,11 +1,15 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2019 German Aerospace Center (DLR) and others.
-// This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v2.0
-// which accompanies this distribution, and is available at
-// http://www.eclipse.org/legal/epl-v20.html
-// SPDX-License-Identifier: EPL-2.0
+// Copyright (C) 2001-2020 German Aerospace Center (DLR) and others.
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0/
+// This Source Code may also be made available under the following Secondary
+// Licenses when the conditions for such availability set forth in the Eclipse
+// Public License 2.0 are satisfied: GNU General Public License, version 2
+// or later which is available at
+// https://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html
+// SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later
 /****************************************************************************/
 /// @file    MSDevice_Transportable.cpp
 /// @author  Daniel Krajzewicz
@@ -15,23 +19,19 @@
 /// @author  Melanie Weber
 /// @author  Andreas Kendziorra
 /// @date    Fri, 30.01.2009
-/// @version $Id$
 ///
 // A device which is used to keep track of persons and containers riding with a vehicle
 /****************************************************************************/
-
-// ===========================================================================
-// included modules
-// ===========================================================================
 #include <config.h>
 
 #include <microsim/output/MSStopOut.h>
 #include <microsim/MSNet.h>
 #include <microsim/MSEdge.h>
-#include <microsim/pedestrians/MSPerson.h>
-#include <microsim/MSTransportableControl.h>
-#include <microsim/MSContainer.h>
+#include <microsim/transportables/MSPerson.h>
+#include <microsim/transportables/MSTransportableControl.h>
+#include <microsim/transportables/MSStageDriving.h>
 #include "MSDevice_Transportable.h"
+#include "MSDevice_Taxi.h"
 
 
 // ===========================================================================
@@ -58,15 +58,20 @@ MSDevice_Transportable::MSDevice_Transportable(SUMOVehicle& holder, const std::s
 
 MSDevice_Transportable::~MSDevice_Transportable() {
     // flush any unfortunate riders still remaining
-    while (!myTransportables.empty()) {
-        MSTransportable* transportable = myTransportables.front();
+    for (auto it = myTransportables.begin(); it != myTransportables.end();) {
+        MSTransportable* transportable = *it;
         WRITE_WARNING((myAmContainer ? "Removing container '" : "Removing person '") + transportable->getID() +
                       "' at removal of vehicle '" + myHolder.getID() + "'");
+        MSStageDriving* const stage = dynamic_cast<MSStageDriving*>(transportable->getCurrentStage());
+        if (stage != nullptr) {
+            stage->setVehicle(nullptr);
+        }
         if (myAmContainer) {
             MSNet::getInstance()->getContainerControl().erase(transportable);
         } else {
             MSNet::getInstance()->getPersonControl().erase(transportable);
         }
+        it = myTransportables.erase(it);
     }
 }
 
@@ -112,6 +117,10 @@ MSDevice_Transportable::notifyMove(SUMOTrafficObject& veh, double /*oldPos*/, do
                         } else {
                             MSStopOut::getInstance()->unloadedPersons(vehicle, 1);
                         }
+                    }
+                    MSDevice_Taxi* taxiDevice = static_cast<MSDevice_Taxi*>(myHolder.getDevice(typeid(MSDevice_Taxi)));
+                    if (taxiDevice != nullptr) {
+                        taxiDevice->customerArrived(transportable);
                     }
                 } else {
                     ++i;
@@ -203,4 +212,3 @@ MSDevice_Transportable::getParameter(const std::string& key) const {
 
 
 /****************************************************************************/
-

@@ -1,11 +1,15 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2019 German Aerospace Center (DLR) and others.
-// This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v2.0
-// which accompanies this distribution, and is available at
-// http://www.eclipse.org/legal/epl-v20.html
-// SPDX-License-Identifier: EPL-2.0
+// Copyright (C) 2001-2020 German Aerospace Center (DLR) and others.
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0/
+// This Source Code may also be made available under the following Secondary
+// Licenses when the conditions for such availability set forth in the Eclipse
+// Public License 2.0 are satisfied: GNU General Public License, version 2
+// or later which is available at
+// https://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html
+// SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later
 /****************************************************************************/
 /// @file    GUIAppEnum.h
 /// @author  Daniel Krajzewicz
@@ -13,17 +17,10 @@
 /// @author  Michael Behrisch
 /// @author  Andreas Gaubatz
 /// @date    Mon, 08.03.2004
-/// @version $Id$
 ///
 // Message and object IDs used by the FOX-version of the gui
 /****************************************************************************/
-#ifndef GUIAppEnum_h
-#define GUIAppEnum_h
-
-
-// ===========================================================================
-// included modules
-// ===========================================================================
+#pragma once
 #include <config.h>
 
 #include <fx.h>
@@ -48,8 +45,8 @@ enum {
     MID_HOTKEY_C_CONNECTMODE_PERSONPLANMODE,
     /// @brief hotkey for mode deleting things
     MID_HOTKEY_D_DELETEMODE,
-    /// @brief hotkey for mode adding edges
-    MID_HOTKEY_E_EDGEMODE,
+    /// @brief hotkey for mode adding edges AND edgeDatas
+    MID_HOTKEY_E_EDGEMODE_EDGEDATAMODE,
     /// @brief hotkey for mode inspecting object attributes
     MID_HOTKEY_I_INSPECTMODE,
     /// @brief hotkey for mode moving element
@@ -76,12 +73,12 @@ enum {
 
     /// @brief Start the simulation in SUMO and open Additionals Elemements in NETEDIT
     MID_HOTKEY_CTRL_A_STARTSIMULATION_OPENADDITIONALS,
-    /// @brief Edit simulation breakpoints
-    MID_HOTKEY_CTRL_B_EDITBREAKPOINT,
+    /// @brief Edit simulation breakpoints in SUMO and open Data Elements in NETEDIT
+    MID_HOTKEY_CTRL_B_EDITBREAKPOINT_OPENDATAELEMENTS,
     /// @brief Copy the current selection / element
     MID_HOTKEY_CTRL_C_COPY,
     /// @brief Perform a single simulation step in SUMO and open Demand Elements in NETEDIT
-    MID_HOTKEY_CTRL_D_SINGLESIMULATIONSTEP_OPENDEMAND,
+    MID_HOTKEY_CTRL_D_SINGLESIMULATIONSTEP_OPENDEMANDELEMENTS,
     /// @brief Toogle Gaming mode in SUMO and grid in NETEDIT
     MID_HOTKEY_CTRL_G_GAMINGMODE_TOOGLEGRID,
     /// @brief Open viewport editor
@@ -150,6 +147,8 @@ enum {
 
     /// @brief Save Additional Elements
     MID_HOTKEY_CTRL_SHIFT_A_SAVEADDITIONALS,
+    /// @brief save Data Elements
+    MID_HOTKEY_CTRL_SHIFT_B_SAVEDATAELEMENTS,
     /// @brief Save Demand Elements
     MID_HOTKEY_CTRL_SHIFT_D_SAVEDEMANDELEMENTS,
     /// @brief save TLS Programs
@@ -162,14 +161,14 @@ enum {
     /// @name Functional hotkeys
     /// @{
 
-    /// @brief hot key <F1> open online documentation
+    /// @brief open online documentation
     MID_HOTKEY_F1_ONLINEDOCUMENTATION,
-    /// @brief hot key <F2> open about dialog
-    MID_HOTKEY_F2_ABOUT,
-    /// @brief hot key <F3> set network mode in NETEDIT
-    MID_HOTKEY_F3_SUPERMODE_NETWORK,
-    /// @brief hot key <F4> set demand mode in NETEDIT
-    MID_HOTKEY_F4_SUPERMODE_DEMAND,
+    /// @brief select network supermode in NETEDIT
+    MID_HOTKEY_F2_SUPERMODE_NETWORK,
+    /// @brief select demand supermode in NETEDIT
+    MID_HOTKEY_F3_SUPERMODE_DEMAND,
+    /// @brief select data supermode in NETEDIT
+    MID_HOTKEY_F4_SUPERMODE_DATA,
     /// @brief compute Network in network mode and Demand elements in demand mode
     MID_HOTKEY_F5_COMPUTE_NETWORK_DEMAND,
     /// @brief clean junctions without edges in network mode and unused routes in demand mode
@@ -182,8 +181,8 @@ enum {
     MID_HOTKEY_F9_EDIT_VIEWSCHEME,
     /// @brief open options menu
     MID_HOTKEY_F10_OPTIONSMENU,
-    /// @brief hot key <F12> focus upper element of current frame
-    MID_HOTKEY_F12_FOCUSUPPERELEMENT,
+    /// @brief open about dialog
+    MID_HOTKEY_F12_ABOUT,
     /// @}
 
     /// @name shift + Functional hotkeys
@@ -197,7 +196,8 @@ enum {
     MID_HOTKEY_SHIFT_F3_TEMPLATE_CLEAR,
     /// @brief compute junctions with volatile options
     MID_HOTKEY_SHIFT_F5_COMPUTEJUNCTIONS_VOLATILE,
-
+    /// @brief focus upper element of current frame (only used in NETEDIT)
+    MID_HOTKEY_SHIFT_F12_FOCUSUPPERELEMENT,
     /// @}
 
     /// @name Other hotkeys
@@ -351,6 +351,8 @@ enum {
     MID_DELAY_TOOGLE,
     /// @brief scale traffic
     MID_DEMAND_SCALE,
+    /// @brief scale vehicle speed
+    MID_SPEEDFACTOR,
     /// @}
 
     /// @name Common view IDs
@@ -574,6 +576,8 @@ enum {
     MID_GNE_TOOLBARFILE_SAVETLSPROGRAMS_AS,
     /// @brief save demand elements as
     MID_GNE_TOOLBARFILE_SAVEDEMAND_AS,
+    /// @brief save data elements as
+    MID_GNE_TOOLBARFILE_SAVEDATA_AS,
 
     /// @}
 
@@ -595,11 +599,19 @@ enum {
 
     /// @}
 
-    /// @name GNEViewNet view options messages
+    /// @name GNEViewNet common view options messages
     /// @{
 
     /// @brief show grid
     MID_GNE_COMMONVIEWOPTIONS_SHOWGRID,
+    /// @brief Draw vehicles in begin position or spread in lane
+    MID_GNE_COMMONVIEWOPTIONS_DRAWSPREADVEHICLES,
+
+    /// @}
+
+    /// @name GNEViewNet Network view options messages
+    /// @{
+
     /// @brief show demand elements
     MID_GNE_NETWORKVIEWOPTIONS_SHOWDEMANDELEMENTS,
     /// @brief select edges
@@ -622,6 +634,12 @@ enum {
     MID_GNE_NETWORKVIEWOPTIONS_CHAINEDGES,
     /// @brief automatically create opposite edge
     MID_GNE_NETWORKVIEWOPTIONS_AUTOOPPOSITEEDGES,
+
+    /// @}
+
+    /// @name GNEViewNet Demand view options messages
+    /// @{
+
     /// @brief hide non-inspected demand element
     MID_GNE_DEMANDVIEWOPTIONS_HIDENONINSPECTED,
     /// @brief hide shapes
@@ -630,6 +648,16 @@ enum {
     MID_GNE_DEMANDVIEWOPTIONS_SHOWALLPERSONPLANS,
     /// @brief lock person
     MID_GNE_DEMANDVIEWOPTIONS_LOCKPERSON,
+
+    /// @}
+
+    /// @name GNEViewNet Data view options messages
+    /// @{
+
+    /// @brief show demand elements
+    MID_GNE_DATAVIEWOPTIONS_SHOWDEMANDELEMENTS,
+    /// @brief hide shapes
+    MID_GNE_DATAVIEWOPTIONS_HIDESHAPES,
 
     /// @}
 
@@ -663,6 +691,12 @@ enum {
     MID_GNE_TAGTYPE_SELECTED,
     /// @brief tag selected in ComboBox
     MID_GNE_TAG_SELECTED,
+    /// @brief create new data set
+    MID_GNE_DATASET_NEW,
+    /// @brief GNEDataInterval selected in comboBox of IntervalBar
+    MID_GNE_DATASET_SELECTED,
+    /// @brief GNEDataInterval selected in comboBox of IntervalBar
+    MID_GNE_DATAINTERVAL_SELECTED,
     /// @brief text attribute edited
     MID_GNE_SET_ATTRIBUTE_TEXT,
     /// @brief bool attribute edited
@@ -697,7 +731,12 @@ enum {
     MID_GNE_OVERLAPPED_SHOWLIST,
     /// @brief list item selected in overlapped modul
     MID_GNE_OVERLAPPED_ITEMSELECTED,
-
+    /// @brief enable/disable show data elements by interval
+    MID_GNE_DATAINTERVAL_LIMITED,
+    /// @brief begin changed in InterbalBar
+    MID_GNE_DATAINTERVAL_SETBEGIN,
+    /// @brief end changed in InterbalBar
+    MID_GNE_DATAINTERVAL_SETEND,
     /// @}
 
     /// @name GNESelectorFrame messages
@@ -711,6 +750,12 @@ enum {
     MID_GNE_SELECTORFRAME_PROCESSSTRING,
     /// @brief changes the visual scaling of selected items
     MID_GNE_SELECTORFRAME_SELECTSCALE,
+    /// @brief change interval
+    MID_GNE_SELECTORFRAME_SETINTERVAL,
+    /// @brief edit begin text field
+    MID_GNE_SELECTORFRAME_SETBEGIN,
+    /// @brief end text field
+    MID_GNE_SELECTORFRAME_SETEND,
 
     /// @}
 
@@ -769,8 +814,12 @@ enum {
     MID_GNE_TLSFRAME_CLEANUP,
     /// @brief mark unused states
     MID_GNE_TLSFRAME_MARKUNUSED,
-    /// @brief mark unused states
+    /// @brief add unused states
     MID_GNE_TLSFRAME_ADDUNUSED,
+    /// @brief group states
+    MID_GNE_TLSFRAME_GROUP_STATES,
+    /// @brief ungroup states
+    MID_GNE_TLSFRAME_UNGROUP_STATES,
     /// @brief Load Program
     MID_GNE_TLSFRAME_LOAD_PROGRAM,
     /// @brief cleanup unused states
@@ -961,15 +1010,23 @@ enum {
     MID_GNE_PERSON_TRANSFORM,
     /// @}
 
-    /// @name Additional Dialog messages (used in all GNEAdditionalDialogs)
+    /// @name Netedit Dialogs
     /// @{
 
     /// @brief accept button
-    MID_GNE_ADDITIONALDIALOG_BUTTONACCEPT,
+    MID_GNE_BUTTON_ACCEPT,
     /// @brief cancel button
-    MID_GNE_ADDITIONALDIALOG_BUTTONCANCEL,
+    MID_GNE_BUTTON_CANCEL,
     /// @brief reset button
-    MID_GNE_ADDITIONALDIALOG_BUTTONRESET,
+    MID_GNE_BUTTON_RESET,
+    /// @brief load button
+    MID_GNE_BUTTON_LOAD,
+    /// @brief save button
+    MID_GNE_BUTTON_SAVE,
+    /// @brief clear button
+    MID_GNE_BUTTON_CLEAR,
+    /// @brief sort button
+    MID_GNE_BUTTON_SORT,
 
     /// @}
 
@@ -1033,8 +1090,6 @@ enum {
     MID_GNE_CALIBRATORDIALOG_TABLE_VEHICLETYPE,
     /// @brief add vehicle type
     MID_GNE_CALIBRATORDIALOG_ADD_VEHICLETYPE,
-    /// @brief set new variable
-    MID_GNE_CALIBRATORDIALOG_SET_VARIABLE,
 
     /// @}
 
@@ -1060,26 +1115,6 @@ enum {
 
     /// @}
 
-    /// @name GNEParameters Dialog messages
-    /// @{
-
-    /// @brief load parameters
-    MID_GNE_PARAMETERS_LOAD,
-    /// @brief save parameters
-    MID_GNE_PARAMETERS_SAVE,
-    /// @brief clear parameters
-    MID_GNE_PARAMETERS_CLEAR,
-    /// @brief sort parameters
-    MID_GNE_PARAMETERS_SORT,
-
-    /// @}
-
     /// @brief last element of enum (not used)
     MID_LAST
 };
-
-
-#endif
-
-/****************************************************************************/
-

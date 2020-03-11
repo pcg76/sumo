@@ -33,6 +33,9 @@ classname() {}
 /* Reporting string for enabled options */
 #define HAVE_ENABLED "@ENABLED_FEATURES@"
 
+/* defined if Eigen is available */
+#cmakedefine HAVE_EIGEN
+
 /* defined if ffmpeg is available */
 #cmakedefine HAVE_FFMPEG
 
@@ -61,7 +64,7 @@ classname() {}
 #define HAVE_VERSION_H
 #ifndef HAVE_VERSION_H
 /* Define if auto-generated version.h is unavailable. */
-#define VERSION_STRING "1.3.1"
+#define VERSION_STRING "1.5.0"
 #endif
 
 /* defines the epsilon to use on general floating point comparison */

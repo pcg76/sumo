@@ -1,11 +1,15 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2012-2019 German Aerospace Center (DLR) and others.
-// This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v2.0
-// which accompanies this distribution, and is available at
-// http://www.eclipse.org/legal/epl-v20.html
-// SPDX-License-Identifier: EPL-2.0
+// Copyright (C) 2012-2020 German Aerospace Center (DLR) and others.
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0/
+// This Source Code may also be made available under the following Secondary
+// Licenses when the conditions for such availability set forth in the Eclipse
+// Public License 2.0 are satisfied: GNU General Public License, version 2
+// or later which is available at
+// https://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html
+// SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later
 /****************************************************************************/
 /// @file    TraCIAPI.cpp
 /// @author  Daniel Krajzewicz
@@ -13,15 +17,9 @@
 /// @author  Jakob Erdmann
 /// @author  Michael Behrisch
 /// @date    30.05.2012
-/// @version $Id$
 ///
 // C++ TraCI client API implementation
 /****************************************************************************/
-
-
-// ===========================================================================
-// included modules
-// ===========================================================================
 #include "TraCIAPI.h"
 
 
@@ -1839,22 +1837,33 @@ TraCIAPI::SimulationScope::getDistanceRoad(const std::string& edgeID1, double po
     return 0.;
 }
 
+
 libsumo::TraCIStage
 TraCIAPI::SimulationScope::findRoute(const std::string& fromEdge, const std::string& toEdge, const std::string& vType, double pos, int routingMode) const {
-	tcpip::Storage content;
-	content.writeByte(libsumo::TYPE_COMPOUND);
-	content.writeInt(5);
-	content.writeUnsignedByte(libsumo::TYPE_STRING);
-	content.writeString(fromEdge);
-	content.writeUnsignedByte(libsumo::TYPE_STRING);
-	content.writeString(toEdge);
-	content.writeUnsignedByte(libsumo::TYPE_STRING);
-	content.writeString(vType);
-	content.writeUnsignedByte(libsumo::TYPE_DOUBLE);
-	content.writeDouble(pos);
-	content.writeUnsignedByte(libsumo::TYPE_INTEGER);
-	content.writeInt(routingMode);
-	return myParent.getTraCIStage(libsumo::CMD_GET_SIM_VARIABLE, libsumo::FIND_ROUTE, "", &content);
+    tcpip::Storage content;
+    content.writeByte(libsumo::TYPE_COMPOUND);
+    content.writeInt(5);
+    content.writeUnsignedByte(libsumo::TYPE_STRING);
+    content.writeString(fromEdge);
+    content.writeUnsignedByte(libsumo::TYPE_STRING);
+    content.writeString(toEdge);
+    content.writeUnsignedByte(libsumo::TYPE_STRING);
+    content.writeString(vType);
+    content.writeUnsignedByte(libsumo::TYPE_DOUBLE);
+    content.writeDouble(pos);
+    content.writeUnsignedByte(libsumo::TYPE_INTEGER);
+    content.writeInt(routingMode);
+    return myParent.getTraCIStage(libsumo::CMD_GET_SIM_VARIABLE, libsumo::FIND_ROUTE, "", &content);
+}
+
+
+void
+TraCIAPI::SimulationScope::writeMessage(const std::string msg) {
+    tcpip::Storage content;
+    content.writeUnsignedByte(libsumo::TYPE_STRING);
+    content.writeString(msg);
+    myParent.createCommand(libsumo::CMD_SET_SIM_VARIABLE, libsumo::CMD_MESSAGE, "", &content);
+    myParent.processSet(libsumo::CMD_SET_SIM_VARIABLE);
 }
 
 // ---------------------------------------------------------------------------
@@ -1913,7 +1922,7 @@ TraCIAPI::TrafficLightScope::getCompleteRedYellowGreenDefinition(const std::stri
                 }
                 myParent.myInput.readUnsignedByte();
                 const std::string name = myParent.myInput.readString();
-                logic.phases.emplace_back(libsumo::TraCIPhase(duration, state, minDur, maxDur, next, name));
+                logic.phases.emplace_back(new libsumo::TraCIPhase(duration, state, minDur, maxDur, next, name));
             }
             myParent.myInput.readUnsignedByte();
             const int paramNumber = myParent.myInput.readInt();
@@ -2054,25 +2063,25 @@ TraCIAPI::TrafficLightScope::setCompleteRedYellowGreenDefinition(const std::stri
     content.writeInt(logic.currentPhaseIndex);
     content.writeUnsignedByte(libsumo::TYPE_COMPOUND);
     content.writeInt((int)logic.phases.size());
-    for (const libsumo::TraCIPhase& p : logic.phases) {
+    for (const libsumo::TraCIPhase* p : logic.phases) {
         content.writeUnsignedByte(libsumo::TYPE_COMPOUND);
         content.writeInt(6);
         content.writeUnsignedByte(libsumo::TYPE_DOUBLE);
-        content.writeDouble(p.duration);
+        content.writeDouble(p->duration);
         content.writeUnsignedByte(libsumo::TYPE_STRING);
-        content.writeString(p.state);
+        content.writeString(p->state);
         content.writeUnsignedByte(libsumo::TYPE_DOUBLE);
-        content.writeDouble(p.minDur);
+        content.writeDouble(p->minDur);
         content.writeUnsignedByte(libsumo::TYPE_DOUBLE);
-        content.writeDouble(p.maxDur);
+        content.writeDouble(p->maxDur);
         content.writeUnsignedByte(libsumo::TYPE_COMPOUND);
-        content.writeInt((int)p.next.size());
-        for (int n : p.next) {
+        content.writeInt((int)p->next.size());
+        for (int n : p->next) {
             content.writeUnsignedByte(libsumo::TYPE_INTEGER);
             content.writeInt(n);
         }
         content.writeUnsignedByte(libsumo::TYPE_STRING);
-        content.writeString(p.name);
+        content.writeString(p->name);
     }
     content.writeUnsignedByte(libsumo::TYPE_COMPOUND);
     content.writeInt((int)logic.subParameter.size());
@@ -3263,6 +3272,22 @@ TraCIAPI::VehicleScope::addSubscriptionFilterVType(const std::vector<std::string
     addSubscriptionFilterStringList(libsumo::FILTER_TYPE_VTYPE, vTypes);
 }
 
+
+void
+TraCIAPI::VehicleScope::addSubscriptionFilterFieldOfVision(double angle) const {
+    addSubscriptionFilterFloat(libsumo::FILTER_TYPE_FIELD_OF_VISION, angle);
+}
+
+void
+TraCIAPI::VehicleScope::addSubscriptionFilterLateralDistance(double lateralDist, double downstreamDist, double upstreamDist) const {
+    addSubscriptionFilterFloat(libsumo::FILTER_TYPE_LATERAL_DIST, lateralDist);
+    if (downstreamDist >= 0) {
+        addSubscriptionFilterDownstreamDistance(downstreamDist);
+    }
+    if (upstreamDist >= 0) {
+        addSubscriptionFilterUpstreamDistance(upstreamDist);
+    }
+}
 
 void
 TraCIAPI::VehicleScope::addSubscriptionFilterEmpty(int filterType) const {

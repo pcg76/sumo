@@ -1,26 +1,23 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2019 German Aerospace Center (DLR) and others.
-// This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v2.0
-// which accompanies this distribution, and is available at
-// http://www.eclipse.org/legal/epl-v20.html
-// SPDX-License-Identifier: EPL-2.0
+// Copyright (C) 2001-2020 German Aerospace Center (DLR) and others.
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0/
+// This Source Code may also be made available under the following Secondary
+// Licenses when the conditions for such availability set forth in the Eclipse
+// Public License 2.0 are satisfied: GNU General Public License, version 2
+// or later which is available at
+// https://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html
+// SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later
 /****************************************************************************/
 /// @file    GNEApplicationWindow.h
 /// @author  Jakob Erdmann
 /// @date    Feb 2011
-/// @version $Id$
 ///
 // The main window of Netedit (adapted from GUIApplicationWindow)
 /****************************************************************************/
-#ifndef GNEApplicationWindow_h
-#define GNEApplicationWindow_h
-
-
-// ===========================================================================
-// included modules
-// ===========================================================================
+#pragma once
 #include <config.h>
 
 #include <utils/common/SUMOTime.h>
@@ -31,6 +28,8 @@
 #include <utils/gui/div/GUIMessageWindow.h>
 #include <utils/gui/windows/GUIMainWindow.h>
 #include <utils/shapes/ShapeHandler.h>
+
+#include "GNEViewNetHelper.h"
 
 
 // ===========================================================================
@@ -82,6 +81,9 @@ public:
         /// @brief The application menu bar for supermodes (network and demand)
         FXMenuBar* superModes;
 
+        /// @brief The application menu bar for save elements (NetworkElements, additionals and demand elements)
+        FXMenuBar* saveElements;
+
         /// @brief The application menu bar for navigation (zoom, coloring...)
         FXMenuBar* navigation;
 
@@ -90,6 +92,9 @@ public:
 
         /// @brief The application menu bar for mode options (show connections, select edges...)
         FXMenuBar* modeOptions;
+
+        /// @brief The application menu bar for mode options (show connections, select edges...)
+        FXMenuBar* intervalBar;
 
     private:
         /// @brief pointer to current GNEApplicationWindow
@@ -101,14 +106,20 @@ public:
         /// @brief menu bar drag for modes (network and demand)
         FXToolBarShell* myToolBarShellSuperModes;
 
+        /// @brief menu bar drag for save elements (NetworkElements, additionals and demand elements)
+        FXToolBarShell* myToolBarShellSaveElements;
+
         /// @brief menu bar drag for navigation (Zoom, coloring...)
         FXToolBarShell* myToolBarShellNavigation;
 
         /// @brief menu bar drag for modes (select, inspect, delete...)
         FXToolBarShell* myToolBarShellModes;
 
-        /// @brief menu bar drag for mode options(show connections, select edges...)
+        /// @brief menu bar drag for mode options (show connections, select edges...)
         FXToolBarShell* myToolBarShellModeOptions;
+
+        /// @brief menu bar drag for interval bar
+        FXToolBarShell* myToolBarShellIntervalBar;
     };
 
     /**@brief Constructor
@@ -135,20 +146,26 @@ public:
     /// @brief called if the user selects Processing->compute junctions with volatile options
     long computeJunctionWithVolatileOptions();
 
+    /// @brief enable save TLS Programs
+    void enableSaveTLSProgramsMenu();
+
     /// @brief enable save additionals
     void enableSaveAdditionalsMenu();
 
     /// @brief disable save additionals
     void disableSaveAdditionalsMenu();
 
-    /// @brief enable save TLS Programs
-    void enableSaveTLSProgramsMenu();
-
     /// @brief enable save demand elements
     void enableSaveDemandElementsMenu();
 
     /// @brief disable save demand elements
     void disableSaveDemandElementsMenu();
+
+    /// @brief enable save data elements
+    void enableSaveDataElementsMenu();
+
+    /// @brief disable save data elements
+    void disableSaveDataElementsMenu();
 
     /// @name Inter-thread event handling
     /// @{
@@ -185,6 +202,9 @@ public:
     /// @brief called when the command/FXCall open demand is executed
     long onCmdOpenDemandElements(FXObject*, FXSelector, void*);
 
+    /// @brief called when the command/FXCall open data is executed
+    long onCmdOpenDataElements(FXObject*, FXSelector, void*);
+
     /// @brief called when the command/FXCall reload is executed
     long onCmdReload(FXObject*, FXSelector, void*);
 
@@ -206,17 +226,17 @@ public:
     /// @brief called when the command/FXCall save network is executed
     long onCmdSaveNetwork(FXObject*, FXSelector, void*);
 
-    /// @brief called when the command/FXCall save additionals is executed
-    long onCmdSaveAdditionals(FXObject*, FXSelector, void*);
-
-    /// @brief called when the command/FXCall save additionals as is executed
-    long onCmdSaveAdditionalsAs(FXObject*, FXSelector, void*);
-
     /// @brief called when the command/FXCall save TLSPrograms is executed
     long onCmdSaveTLSPrograms(FXObject*, FXSelector, void*);
 
     /// @brief called when the command/FXCall save TLSPrograms as is executed
     long onCmdSaveTLSProgramsAs(FXObject*, FXSelector, void*);
+
+    /// @brief called when the command/FXCall save additionals is executed
+    long onCmdSaveAdditionals(FXObject*, FXSelector, void*);
+
+    /// @brief called when the command/FXCall save additionals as is executed
+    long onCmdSaveAdditionalsAs(FXObject*, FXSelector, void*);
 
     /// @brief called when the command/FXCall save demand elements is executed
     long onCmdSaveDemandElements(FXObject*, FXSelector, void*);
@@ -224,8 +244,11 @@ public:
     /// @brief called when the command/FXCall save demand elements as is executed
     long onCmdSaveDemandElementsAs(FXObject*, FXSelector, void*);
 
-    /// @brief called when the update/FXCall save network is executed
-    long onUpdSaveNetwork(FXObject*, FXSelector, void*);
+    /// @brief called when the command/FXCall save data elements is executed
+    long onCmdSaveDataElements(FXObject*, FXSelector, void*);
+
+    /// @brief called when the command/FXCall save data elements as is executed
+    long onCmdSaveDataElementsAs(FXObject*, FXSelector, void*);
 
     /// @brief called when the command/FXCall save network as is executed
     long onCmdSaveAsNetwork(FXObject*, FXSelector, void*);
@@ -236,11 +259,17 @@ public:
     /// @brief called when the update/FXCall reload is executed
     long onUpdReload(FXObject*, FXSelector, void*);
 
+    /// @brief called when the update/FXCall save network is executed
+    long onUpdSaveNetwork(FXObject*, FXSelector, void*);
+
     /// @brief called when the update/FXCall save additionals is executed
     long onUpdSaveAdditionals(FXObject*, FXSelector, void*);
 
     /// @brief called when the update/FXCall save demand elements is executed
     long onUpdSaveDemandElements(FXObject*, FXSelector, void*);
+
+    /// @brief called when the update/FXCall save data elements is executed
+    long onUpdSaveDataElements(FXObject*, FXSelector, void*);
 
     /// @brief called when the update/FXCall undo is executed
     long onUpdUndo(FXObject* obj, FXSelector sel, void* ptr);
@@ -378,8 +407,8 @@ public:
     /// @brief update control contents after undo/redo or recompute
     void updateControls();
 
-    /// @brief update FXMenuCommands
-    void updateSuperModeMenuCommands(int supermode);
+    /// @brief update FXMenuCommands depending of supermode
+    void updateSuperModeMenuCommands(const Supermode supermode);
 
     /// @brief disable undo-redo giving a string with the reason
     void disableUndoRedo(const std::string& reason);
@@ -402,9 +431,10 @@ protected:
 
     /// @brief the submenus
     FXMenuPane* myFileMenu,
-                *myFileMenuAdditionals,
                 *myFileMenuTLS,
+                *myFileMenuAdditionals,
                 *myFileMenuDemandElements,
+                *myFileMenuDataElements,
                 *myEditMenu,
                 *myProcessingMenu,
                 *myLocatorMenu,
@@ -482,6 +512,12 @@ private:
 
         /// @brief FXMenuCommand for enable or disable save demand elements as
         FXMenuCommand* saveDemandElementsAs;
+
+        /// @brief FXMenuCommand for enable or disable save data elements
+        FXMenuCommand* saveDataElements;
+
+        /// @brief FXMenuCommand for enable or disable save data elements as
+        FXMenuCommand* saveDataElementsAs;
 
     private:
         /// @brief pointer to current GNEApplicationWindows
@@ -627,10 +663,10 @@ private:
         FXMenuCommand* toogleGrid;
 
         /// @brief menu check for load additionals in SUMO GUI
-        FXMenuCheck *loadAdditionalsInSUMOGUI;
+        FXMenuCheck* loadAdditionalsInSUMOGUI;
 
         /// @brief menu check for load demand in SUMO GUI
-        FXMenuCheck *loadDemandInSUMOGUI;
+        FXMenuCheck* loadDemandInSUMOGUI;
 
         /// @brief FXMenuCommand for open in SUMO GUI
         FXMenuCommand* openInSUMOGUI;
@@ -747,6 +783,9 @@ private:
         /// @brief FXMenuCommand for demand supermode
         FXMenuCommand* demandMode;
 
+        /// @brief FXMenuCommand for data supermode
+        FXMenuCommand* dataMode;
+
     private:
         /// @brief pointer to current GNEApplicationWindows
         GNEApplicationWindow* myGNEApp;
@@ -798,17 +837,11 @@ private:
     void closeAllWindows();
 
     /// @brief warns about unsaved changes and gives the user the option to abort
-    bool continueWithUnsavedChanges(const std::string &operation);
+    bool continueWithUnsavedChanges(const std::string& operation);
 
     /// @brief warns about unsaved changes in additionals and gives the user the option to abort
-    bool continueWithUnsavedAdditionalChanges(const std::string &operation);
+    bool continueWithUnsavedAdditionalChanges(const std::string& operation);
 
     /// @brief warns about unsaved changes in demand elements and gives the user the option to abort
-    bool continueWithUnsavedDemandElementChanges(const std::string &operation);
+    bool continueWithUnsavedDemandElementChanges(const std::string& operation);
 };
-
-
-#endif
-
-/****************************************************************************/
-

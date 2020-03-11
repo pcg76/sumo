@@ -136,7 +136,10 @@ are listed below:
 - Shift + PageUp / PageDow: move the view left/right (a lot)
 - \+/-, Keypad +/-: zoom in/out
 - Home/Keypad Home: recenter view
-- Ctrl + v: open view settings dialog
+- F9: open view settings dialog
+- Shift-LeftClick: 
+  - vehicle: start tracking
+  - rerouter: change routeProbReroute probabilities
 
 ## Object Properties / Right-Click-Functions
 
@@ -244,7 +247,7 @@ shall be listed in the object locator dialog.
 
 # Influencing the simulation
 
-Currently, there is only very little interaction that can be done from
+Currently, there is only limited interaction that can be done from
 the GUI. This will change in the future (see below)
 
 ## Switching Traffic Lights
@@ -263,6 +266,19 @@ be closed for all traffic (except vClass *authority* and *ignoring*) by
 selecting the option *Close lane* or *Close edge*. In the same way lanes
 or edges can be reopened for traffic by selecting *Reopen lane* or
 *Reopen edge*.
+
+## Scaling the amount of Traffic
+
+The 'Scale Traffic' input in the top menu bar allows scaling the amount of traffic up and down. This works as for the sumo option **--scale**. The frequency / probability of any loaded flows is scaled in proportion and any newly loaded vehicles will be scaled as well.
+
+## Setting Vehicle Speed Factor
+
+When tracking a vehicle (Shift-Click on Vehicle or Vehicle context menu option 'Start Tracking'), a new speedFactor slider is shown.
+This slider allows setting the speedFactor to values between 0 and 2.
+
+## Setting Rerouter Probabilities
+
+When loading [Rerouters with routeProbReroute definitions](Simulation/Rerouter.md#assigning_a_new_route), directional arrows will be shown where the available routes diverge. Shift-Clicking on the rerouter icon or the directional arrows will set 100% probability to one of the available routes. Clicking repeatedly will cycle through the routes and again set 100% to a route.
 
 ## Planned Interactions
 
@@ -316,6 +332,8 @@ follows:
   merging](https://en.wikipedia.org/wiki/Merge_%28traffic%29)
 - <span style="color:#000000; background:#000000">FOO</span> dead-end,
   vehicle may not drive there
+- <span style="color:#FF00FF; background:#FF00FF">FOO</span> suspicious dead-end,
+  there are outgoing edges but the vehicle may not continue anywhere
 
 !!! note
     If a vehicle is braking in the simulation, the responsible foe vehicle (if any) can also be identified directly by taking the following steps:
@@ -340,9 +358,10 @@ have to following meaning:
 
 - <span style="color:#808080; background:#808080">FOO</span> sidewalk (`allow="pedestrian"`)
 - <span style="color:#C0422C; background:#C0422C">FOO</span> bike lane (`allow="bicycle"`)
+- <span style="color:#5C5C5C; background:#5C5C5C">FOO</span> bus lane (`allow="bus"`)
 - <span style="color:#96C8C8; background:#96C8C8">FOO</span> waterway (`allow="ship"`)
 - <span style="color:#FF0000; background:#FF0000">FOO</span> closed lane (`allow="authority"`)
-- <span style="color:#FFFFFF; background:#FFFFFF">FOO</span> green verge (`disallow="all"`)
+- <span style="color:#C8FFC8; background:#C8FFC8">FOO</span> green verge (`disallow="all"`)
 - <span style="color:#5C5C5C; background:#5C5C5C">FOO</span> anything
   else that does not allow passenger
 - <span style="color:#000000; background:#000000">FOO</span> anything
@@ -396,6 +415,10 @@ connections exist.
   different. Also, the indices may be freely customized by the user
   (e.g. to define signal groups). These indices are shown using the
   junction visualization option *Show link tls index*.
+  
+### Check connected components
+Since version 1.4 you can show all network components that are reachable from a particular lane by right-clicking on a lane and then using the 'select reachable' menu option. A new menu opens where you have to select the vehicle class to check. After chosing a vehicle class, all reachable lanes will be added to the lane selection and the edge coloring mode will be set to 'color by selection'. 
+Consequently, all reachable lanes will be colored blue and all unreachable lanes will be gray.
 
 # Changing the appearance/visualisation of the simulation
 
@@ -612,20 +635,20 @@ be loaded by pressing the "Load Decals" button.
 When defining decals in XML a single line which looks like this:
 
 ```
-<decal filename="background.gif" centerX="550.00" centerY="1530.00" width="64.00" height="64.00" rotation="0.00"/>
+<decal file="background.gif" centerX="550.00" centerY="1530.00" width="64.00" height="64.00" rotation="0.00"/>
 ```
 
 The following attributes are supported
 
 | Attribute Name | Value Type    | Description                                                                                                                     |
 | -------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| **filename**   | path (string) | *picture file*, the full name of the background image                                                                           |
+| **file**   | path (string) | *picture file*, the full name of the background image                                                                           |
 | **centerX**    | float         | *center x*, the x-position of the center of the image in network coordinates (in meters)                                        |
 | **centerY**    | float         | *center y*, the y-position of the center of the image in network coordinates (in meters)                                        |
 | **width**      | float         | The width of the image in network coordinates (in meters)                                                                       |
 | **height**     | float         | The height of the image in network coordinates (in meters)                                                                      |
 | rotation       | float         | The angle of the image in degrees                                                                                               |
-| layer          | float         | The layer at which the image in drawn in meters over ground                                                                     |
+| layer          | float         | The layer at which the image is drawn in meters over ground                                                                     |
 | screenRelative | bool          | *relative*, whether the position and size are pixel coordinates relative to the screen rather then the network coordinates      |
 | centerZ        | float         | The z-position of the center of the object in network coordinates (in meters), only used in 3D visualization instead of *layer* |
 | tilt           | float         | The tilt angle of the object, only used in 3D visualization                                                                     |
@@ -679,7 +702,7 @@ When you are done the configuration files should look like below:
 
         <viewport zoom="200" x="100" y="-100"/>
         <delay value="42"/>
-        <decal filename="background.gif" centerX="550.00" centerY="1530.00" width="64.00" height="64.00" rotation="0.00"/>
+        <decal file="background.gif" centerX="550.00" centerY="1530.00" width="64.00" height="64.00" rotation="0.00"/>
         <breakpoint value="42"/>
         <breakpoint value="1337"/>
     </viewsettings>
@@ -727,9 +750,9 @@ elements to the configuration:
 
 # Multiple Views
 
-Using the (![Image:newView.gif](images/NewView.gif
-"Image:newView.gif"))-button, multple viewing windows onto the same
-simulation can be opened. The visualization settings can be set
+Using the (![Image:NewView.gif](images/NewView.gif
+"Image:newView.gif"))-button, multiple viewing windows can be opened onto the same
+simulation. The visualization settings can be set
 independently for each view. The viewing windows can be managed using
 the *Windows* menu in the main menu bar.
 
@@ -740,14 +763,14 @@ viewing window is opened for each file at the start of the simulation.
 
 When SUMO-GUI was compiled with [OSG
 (OpenSceneGraph)](http://www.openscenegraph.org/) support an additional
-(![Image:newView.gif](images/NewView.gif "Image:newView.gif"))-button is
+(![Image:NewView3D.gif](images/NewView3D.gif))-button is
 present which can be used to open a 3D-View.
 
 !!! caution
     The 3D-Visualization is highly experimental
 
 An pre-compiled windows version for testing is available
-[here](http://sumo.dlr.de/daily/sumo-msvc12extrax64-git.zip).
+[here](https://sumo.dlr.de/daily/sumo-win64extra-git.zip).
 
 # Visualizing edge-related data
 
@@ -777,8 +800,6 @@ contained data to see how various traffic measures changed over time
 !!! note
     In the gui-settings dialog, the function 'Recalibrate Rainbow' can be used to adapt the coloring to the data range of the current attribute.
 
-## Version 1.2.0 and later
-
 Edgedata files for visualization can be loaded by setting option **--edgedata-files**. All
 attributes will be loaded and can be selected in the edge visualization
 settings They can also be loaded in **SUMO-GUI** from
@@ -792,32 +813,7 @@ coloring scheme to show the whole data range.
 !!! note
     edgeData is time based so it will only be shown when the simulation time has advance to the begin time of the respective data interval. Make sure to advance the simulation to time 0 (step once) or to whatever begin time was used for edgeData generation before using *Recalibrate Rainbow*. To see further data frames, advance the simulation by using delay or breakpoints.
 
-When defining a color scheme two data values can be used to diagnose
-missing data:
-
-- **-2**: the attribute does not exist in the loaded data for that
-  particular edge
-- **-1**: the attribute exists but no data is available for that edge
-  for the current time
-
-!!! note
-    It may be useful to hide edges with attribute value -1 and -2 by setting the alpha channel to 0. To Make this work, a distinct color value must be set for *0* to avoid interpolation.
-
-## Version 1.1.0 and older
-
-```
-sumo-gui -n net.net.xml --weight-files edgedata.xml -e 86400 --weight-attribute <ATTR>
-```
-
-When using edgeData-output <ATTR\> could be *arrived* or *departed* to
-investigate traffic sources and sinks in the network.
-
-When using **SUMO-GUI** for visualizing weight files
-with values that change over time (files containing multiple intervals)
-and no vehicles are being simulated, it is helpful to load the
-simulation with option **--end** to avoid premature simulation and to set a
-*delay* value or [\#Breakpoints](#breakpoints) because the
-simulation will otherwise exit quickly when running without vehicles).
+When defining a color scheme, a dedicated color for missing data ('No Data') can always be configured.
 
 # Usage Examples
 

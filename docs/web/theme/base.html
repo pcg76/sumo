@@ -7,7 +7,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         
         <!-- Facebook OpenGraph -->
-        <meta property="og:image" content="images/image-facebook.jpg">
+        <meta property="og:image" content="{{ 'images/image-facebook.jpg'|url }}">
         <meta property="og:image:type" content="image/jpeg">
         <meta property="og:image:width" content="1080">
         <meta property="og:image:height" content="1080">
@@ -71,7 +71,7 @@
       {%- block extrahead %} {% endblock %}
     </head>
 
-    <body{% if page and page.is_homepage %} class="homepage"{% endif %}>
+    <body{% if page and page.is_homepage %} class="homepage"{% endif %} style="background:#f6f6f6;">
 
         <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary text-center">
             <div class="container-fluid">
@@ -173,9 +173,10 @@
             <div class="row">
                 {%- block content %}
                     <div class="col-md-3">
-                        <div class="text-center"><a href="{{ 'index.html'|url }}" style="display: inline-block; margin-top: 5px;"><img src="{{'images/sumo-logo.png'|url}}" alt="SUMO Logo" width="120px" style="pointer-events:none; border:10px; border-color: #aaaaaa; border-radius:50%; margin-bottom: 10px;"></a></div>
-                      {% include "toc.html" %}</div>
-                    <div class="col-md-9" role="main">
+                        <div class="text-center"><a href="{{ 'index.html'|url }}" style="display: inline-block; margin-top: 5px;"><img src="{{'images/sumo-logo.png'|url}}" class="sumoLogo" alt="SUMO Logo" width="120px"></a></div>
+                      {% if not page.is_homepage %}{% include "toc.html" %}{% endif %}
+                      {% if page.is_homepage %}{% include "note.html" %}{% endif %}</div>
+                    <div class="col-md-9" role="main" style="background:white; padding:20px; border-radius:8px; margin-top:5px;">
                         
                             {% if page and not page.is_homepage %}
                             <hTitles>{{page.title}}<hr style="border: 0.5px solid #338033; margin-top: 5px !important;"></hTitles>
@@ -194,7 +195,7 @@
         <footer class="col-md-12">
           {%- block footer %}
           {% if page and page.meta.revision_date %}
-        <br><small><i>This page was last edited on: {{ page.meta.revision_date }}</i></small>
+        <br><small><i>This page was last edited on: {{ page.meta.revision_date.strftime('%d %B %Y') }}</i></small>
     {% endif %}
             <hr>
             {%- if config.copyright %}

@@ -5,6 +5,8 @@ set(netimport_STAT_SRCS
    NIFrame.h
    NILoader.cpp
    NILoader.h
+   NITypeLoader.cpp
+   NITypeLoader.h
    NIImporter_ArcView.cpp
    NIImporter_ArcView.h
    NIImporter_DlrNavteq.cpp
@@ -17,8 +19,6 @@ set(netimport_STAT_SRCS
    NIImporter_OpenDrive.h
    NIImporter_OpenStreetMap.cpp
    NIImporter_OpenStreetMap.h
-   NIImporter_RobocupRescue.cpp
-   NIImporter_RobocupRescue.h
    NIImporter_SUMO.cpp
    NIImporter_SUMO.h
    NIImporter_VISUM.cpp

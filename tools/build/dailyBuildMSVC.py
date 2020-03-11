@@ -1,18 +1,21 @@
 #!/usr/bin/env python
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-# Copyright (C) 2008-2019 German Aerospace Center (DLR) and others.
-# This program and the accompanying materials
-# are made available under the terms of the Eclipse Public License v2.0
-# which accompanies this distribution, and is available at
-# http://www.eclipse.org/legal/epl-v20.html
-# SPDX-License-Identifier: EPL-2.0
+# Copyright (C) 2008-2020 German Aerospace Center (DLR) and others.
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License 2.0 which is available at
+# https://www.eclipse.org/legal/epl-2.0/
+# This Source Code may also be made available under the following Secondary
+# Licenses when the conditions for such availability set forth in the Eclipse
+# Public License 2.0 are satisfied: GNU General Public License, version 2
+# or later which is available at
+# https://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html
+# SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later
 
 # @file    dailyBuildMSVC.py
 # @author  Michael Behrisch
 # @author  Jakob Erdmann
 # @author  Laura Bieker
 # @date    2008
-# @version $Id$
 
 """
 Does the nightly git pull on the windows server and the visual
@@ -33,8 +36,10 @@ import shutil
 import sys
 
 import status
-import version
 import wix
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import sumolib  # noqa
 
 BINARIES = ("activitygen", "emissionsDrivingCycle", "emissionsMap",
             "dfrouter", "duarouter", "jtrrouter", "marouter",
@@ -56,7 +61,7 @@ def repositoryUpdate(options, log):
         subprocess.call(["git", "pull"], stdout=log, stderr=subprocess.STDOUT)
         subprocess.call(["git", "submodule", "update"], stdout=log, stderr=subprocess.STDOUT)
         if gitrev == "":
-            gitrev = version.gitDescribe()
+            gitrev = sumolib.version.gitDescribe()
     os.chdir(cwd)
     return gitrev
 
@@ -109,7 +114,9 @@ def runTests(options, env, gitrev, log, debugSuffix=""):
 
 def generateCMake(generator, log, checkOptionalLibs, python):
     buildDir = os.path.join(env["SUMO_HOME"], "build", "cmake-build-" + generator.replace(" ", "-"))
-    cmakeOpt = ["-DCOMPILE_DEFINITIONS=MSVC_TEST_SERVER", "-DCHECK_OPTIONAL_LIBS=%s" % checkOptionalLibs]
+    cmakeOpt = ["-DCOMPILE_DEFINITIONS=MSVC_TEST_SERVER",
+                "-DDEFAULT_LIBSUMO_PYTHON=False",
+                "-DCHECK_OPTIONAL_LIBS=%s" % checkOptionalLibs]
     if python:
         cmakeOpt += ["-DPYTHON_EXECUTABLE=%s" % python]
     if checkOptionalLibs:
@@ -169,8 +176,10 @@ for platform in (["x64"] if options.x64only else ["Win32", "x64"]):
     binDir = "sumo-git/bin/"
 
     toClean = [makeLog, makeAllLog]
+    toolsLibsumoDir = os.path.join(options.rootDir, options.binDir.replace("bin", "tools"), "libsumo")
     for ext in ("*.exe", "*.ilk", "*.pdb", "*.py", "*.pyd", "*.dll", "*.lib", "*.exp", "*.jar"):
         toClean += glob.glob(os.path.join(options.rootDir, options.binDir, ext))
+    toClean += glob.glob(os.path.join(toolsLibsumoDir, "libsumo*"))
     for f in toClean:
         try:
             os.remove(f)
@@ -186,8 +195,9 @@ for platform in (["x64"] if options.x64only else ["Win32", "x64"]):
         buildDir = generateCMake(generator, log, options.suffix == "extra", options.python)
         ret = subprocess.call(["cmake", "--build", ".", "--config", "Release"],
                               cwd=buildDir, stdout=log, stderr=subprocess.STDOUT)
-        ret = subprocess.call(["cmake", "--build", ".", "--target", "cadyts"],
-                              cwd=buildDir, stdout=log, stderr=subprocess.STDOUT)
+        if os.path.exists(os.path.join("src", "libsumo", "_libsumo.vcxproj")):
+            ret = subprocess.call(["cmake", "--build", ".", "--target", "_libsumo"],
+                                  cwd=buildDir, stdout=log, stderr=subprocess.STDOUT)
         ret = subprocess.call(["cmake", "--build", ".", "--target", "lisum-gui"],
                               cwd=buildDir, stdout=log, stderr=subprocess.STDOUT)
         if ret == 0 and sumoAllZip:
@@ -201,8 +211,7 @@ for platform in (["x64"] if options.x64only else ["Win32", "x64"]):
                     if f.count('/') == 1:
                         write = f.endswith(".md") or os.path.basename(f) in ["AUTHORS", "ChangeLog", "LICENSE"]
                     if f.endswith('/') and f.count('/') == 2:
-                        write = (f.endswith('/bin/') or
-                                 f.endswith('/tools/') or f.endswith('/data/') or f.endswith('/docs/'))
+                        write = f.endswith(('/bin/', '/tools/', '/data/', '/docs/'))
                         if f.endswith('/bin/'):
                             binDir = f
                     elif f.endswith('/') and '/docs/' in f and f.count('/') == 3:
@@ -223,13 +232,20 @@ for platform in (["x64"] if options.x64only else ["Win32", "x64"]):
                             write = True
                         if write:
                             zipf.write(f, nameInZip)
+                srcDir = os.path.join(options.rootDir, options.binDir.replace("bin", "src"))
                 includeDir = binDir.replace("bin", "include")
                 printLog("Creating sumo.zip.", log)
-                for f in glob.glob(os.path.join(options.rootDir, options.binDir.replace("bin", "src"),
-                                                "libsumo", "*.h")):
-                    base = os.path.basename(f)
-                    nameInZip = os.path.join(includeDir, "libsumo", base)
-                    if base != "Helper.h":
+                for f in (glob.glob(os.path.join(srcDir, "libsumo", "*.h")) +
+                          glob.glob(os.path.join(srcDir, "utils", "traci", "TraCIAPI.*")) +
+                          glob.glob(os.path.join(srcDir, "foreign", "tcpip", "s*.*"))):
+                    if os.path.basename(f) != "Helper.h":
+                        zipf.write(f, includeDir + f[len(srcDir):])
+                zipf.write(os.path.join(buildDir, "src", "version.h"), os.path.join(includeDir, "version.h"))
+                for f in (glob.glob(os.path.join(toolsLibsumoDir, "*.py")) +
+                          glob.glob(os.path.join(toolsLibsumoDir, "*.pyd"))):
+                    # no os.path.join here, since the namelist uses only "/"
+                    nameInZip = binDir.replace("bin", "tools") + "libsumo/" + os.path.basename(f)
+                    if nameInZip not in zipf.namelist():
                         zipf.write(f, nameInZip)
                 zipf.close()
                 if options.suffix == "":

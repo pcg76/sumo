@@ -1,15 +1,18 @@
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-# Copyright (C) 2009-2019 German Aerospace Center (DLR) and others.
-# This program and the accompanying materials
-# are made available under the terms of the Eclipse Public License v2.0
-# which accompanies this distribution, and is available at
-# http://www.eclipse.org/legal/epl-v20.html
-# SPDX-License-Identifier: EPL-2.0
+# Copyright (C) 2009-2020 German Aerospace Center (DLR) and others.
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License 2.0 which is available at
+# https://www.eclipse.org/legal/epl-2.0/
+# This Source Code may also be made available under the following Secondary
+# Licenses when the conditions for such availability set forth in the Eclipse
+# Public License 2.0 are satisfied: GNU General Public License, version 2
+# or later which is available at
+# https://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html
+# SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later
 
 # @file    route.py
 # @author  Michael Behrisch
 # @date    2013-10-23
-# @version $Id$
 
 from __future__ import print_function
 import os
@@ -31,7 +34,7 @@ def _getMinPath(paths):
     return minPath
 
 
-def mapTrace(trace, net, delta, verbose=False, airDistFactor=2, fillGaps=False, gapPenalty=-1):
+def mapTrace(trace, net, delta, verbose=False, airDistFactor=2, fillGaps=False, gapPenalty=-1, debug=False):
     """
     matching a list of 2D positions to consecutive edges in a network.
     The positions are assumed to be dense (i.e. covering each edge of the route) and in the correct order.
@@ -43,27 +46,35 @@ def mapTrace(trace, net, delta, verbose=False, airDistFactor=2, fillGaps=False, 
         print("mapping trace with %s points" % len(trace))
     for pos in trace:
         newPaths = {}
-        candidates = net.getNeighboringEdges(pos[0], pos[1], delta)
+        candidates = net.getNeighboringEdges(pos[0], pos[1], delta, not net.hasInternal)
+        if debug:
+            print("\n\npos:%s, %s" % (pos[0], pos[1]))
+            print("candidates:%s\n" % candidates)
         if len(candidates) == 0 and verbose:
             print("Found no candidate edges for %s,%s" % pos)
+
         for edge, d in candidates:
             base = polygonOffsetWithMinimumDistanceToPoint(pos, edge.getShape())
             if paths:
-                advance = euclidean(lastPos, pos)
+                advance = euclidean(lastPos, pos)  # should become a vector
                 minDist = 1e400
                 minPath = None
                 for path, (dist, lastBase) in paths.items():
+                    if debug:
+                        print("*** extending path %s by edge '%s'" % ([e.getID() for e in path], edge.getID()))
+                        print("              lastBase: %s, base: %s, advance: %s, old dist: %s, minDist: %s" %
+                              (lastBase, base, advance, dist, minDist))
                     if dist < minDist:
                         if edge == path[-1]:
                             baseDiff = lastBase + advance - base
                             extension = ()
-                        elif edge in path[-1].getOutgoing():
-                            baseDiff = lastBase + advance - path[-1].getLength() - base
-                            extension = (edge,)
+                            if debug:
+                                print("---------- same edge")
                         else:
-                            extension = None
-                            if fillGaps:
-                                extension, cost = net.getShortestPath(path[-1], edge, airDistFactor * advance)
+                            extension, cost = net.getShortestPath(
+                                path[-1], edge, airDistFactor * advance + edge.getLength() + path[-1].getLength())
+                            if extension is not None and not fillGaps and len(extension) > 2:
+                                extension = None
                             if extension is None:
                                 airLineDist = euclidean(
                                     path[-1].getToNode().getCoord(),
@@ -76,9 +87,15 @@ def mapTrace(trace, net, delta, verbose=False, airDistFactor=2, fillGaps=False, 
                             else:
                                 baseDiff = lastBase + advance - (cost - edge.getLength()) - base
                                 extension = extension[1:]
-                        if dist + baseDiff * baseDiff < minDist:
-                            minDist = dist + baseDiff * baseDiff
+                            if debug:
+                                print("---------- extension path: %s, cost: %s, baseDiff: %s" %
+                                      (extension, cost, baseDiff))
+                        dist += baseDiff * baseDiff
+                        if dist < minDist:
+                            minDist = dist
                             minPath = path + extension
+                        if debug:
+                            print("*** new dist: %s baseDiff: %s minDist: %s" % (dist, baseDiff, minDist))
                 if minPath:
                     newPaths[minPath] = (minDist, base)
             else:
@@ -89,5 +106,9 @@ def mapTrace(trace, net, delta, verbose=False, airDistFactor=2, fillGaps=False, 
         paths = newPaths
         lastPos = pos
     if paths:
+        if debug:
+            print("**************** result:")
+            for i in result + _getMinPath(paths):
+                print("path:%s" % i.getID())
         return result + _getMinPath(paths)
     return result

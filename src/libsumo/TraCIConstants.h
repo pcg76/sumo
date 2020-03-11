@@ -1,11 +1,15 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2007-2019 German Aerospace Center (DLR) and others.
-// This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v2.0
-// which accompanies this distribution, and is available at
-// http://www.eclipse.org/legal/epl-v20.html
-// SPDX-License-Identifier: EPL-2.0
+// Copyright (C) 2007-2020 German Aerospace Center (DLR) and others.
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0/
+// This Source Code may also be made available under the following Secondary
+// Licenses when the conditions for such availability set forth in the Eclipse
+// Public License 2.0 are satisfied: GNU General Public License, version 2
+// or later which is available at
+// https://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html
+// SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later
 /****************************************************************************/
 /// @file    TraCIConstants.h
 /// @author  Axel Wegener
@@ -20,12 +24,10 @@
 /// @author  Jakob Erdmann
 /// @author  Laura Bieker
 /// @date    2007/10/24
-/// @version $Id$
 ///
 // holds codes used for TraCI
 /****************************************************************************/
-#ifndef TRACICONSTANTS_H
-#define TRACICONSTANTS_H
+#pragma once
 
 #if __cplusplus >= 201103L
 #define TRACI_CONST constexpr
@@ -94,6 +96,8 @@ TRACI_CONST int RESPONSE_SUBSCRIBE_INDUCTIONLOOP_CONTEXT = 0x90;
 TRACI_CONST int CMD_GET_INDUCTIONLOOP_VARIABLE = 0xa0;
 // response: get induction loop (e1) variable
 TRACI_CONST int RESPONSE_GET_INDUCTIONLOOP_VARIABLE = 0xb0;
+// command: set induction loop (e1) variable, not used yet
+//TRACI_CONST int CMD_GET_INDUCTIONLOOP_VARIABLE = 0xc0;
 // command: subscribe induction loop (e1) variable
 TRACI_CONST int CMD_SUBSCRIBE_INDUCTIONLOOP_VARIABLE = 0xd0;
 // response: subscribe induction loop (e1) variable
@@ -107,6 +111,8 @@ TRACI_CONST int RESPONSE_SUBSCRIBE_MULTIENTRYEXIT_CONTEXT = 0x91;
 TRACI_CONST int CMD_GET_MULTIENTRYEXIT_VARIABLE = 0xa1;
 // response: get multi-entry/multi-exit detector (e3) variable
 TRACI_CONST int RESPONSE_GET_MULTIENTRYEXIT_VARIABLE = 0xb1;
+// command: set multi-entry/multi-exit detector (e3) variable, not used yet
+//TRACI_CONST int CMD_GET_MULTIENTRYEXIT_VARIABLE = 0xc1;
 // command: subscribe multi-entry/multi-exit detector (e3) variable
 TRACI_CONST int CMD_SUBSCRIBE_MULTIENTRYEXIT_VARIABLE = 0xd1;
 // response: subscribe multi-entry/multi-exit detector (e3) variable
@@ -277,17 +283,19 @@ TRACI_CONST int CMD_SUBSCRIBE_GUI_VARIABLE = 0xdc;
 // response: subscribe GUI variable
 TRACI_CONST int RESPONSE_SUBSCRIBE_GUI_VARIABLE = 0xec;
 
-// command: subscribe areal detector (e2) context
+// command: subscribe lane area detector (e2) context
 TRACI_CONST int CMD_SUBSCRIBE_LANEAREA_CONTEXT = 0x8d;
-// response: subscribe areal detector (e2) context
+// response: subscribe lane area detector (e2) context
 TRACI_CONST int RESPONSE_SUBSCRIBE_LANEAREA_CONTEXT = 0x9d;
-// command: get areal detector (e2) variable
+// command: get lane area detector (e2) variable
 TRACI_CONST int CMD_GET_LANEAREA_VARIABLE = 0xad;
-// response: get areal detector (e2) variable
+// response: get lane area detector (e2) variable
 TRACI_CONST int RESPONSE_GET_LANEAREA_VARIABLE = 0xbd;
-// command: subscribe areal detector (e2) variable
+// command: set lane area detector (e2) variable, not used yet
+//TRACI_CONST int CMD_GET_LANEAREA_VARIABLE = 0xcd;
+// command: subscribe lane area detector (e2) variable
 TRACI_CONST int CMD_SUBSCRIBE_LANEAREA_VARIABLE = 0xdd;
-// response: subscribe areal detector (e2) variable
+// response: subscribe lane area detector (e2) variable
 TRACI_CONST int RESPONSE_SUBSCRIBE_LANEAREA_VARIABLE = 0xed;
 
 // command: subscribe person context
@@ -304,6 +312,141 @@ TRACI_CONST int CMD_SET_PERSON_VARIABLE = 0xce;
 TRACI_CONST int CMD_SUBSCRIBE_PERSON_VARIABLE = 0xde;
 // response: subscribe person variable
 TRACI_CONST int RESPONSE_SUBSCRIBE_PERSON_VARIABLE = 0xee;
+
+// command: subscribe busstop context
+TRACI_CONST int CMD_SUBSCRIBE_BUSSTOP_CONTEXT = 0x8f;
+// response: subscribe busstop context
+TRACI_CONST int RESPONSE_SUBSCRIBE_BUSSTOP_CONTEXT = 0x9f;
+// command: get busstop variable
+TRACI_CONST int CMD_GET_BUSSTOP_VARIABLE = 0xaf;
+// response: get busstop variable
+TRACI_CONST int RESPONSE_GET_BUSSTOP_VARIABLE = 0xbf;
+// command: set busstop variable, not used yet
+//TRACI_CONST int CMD_SET_BUSSTOP_VARIABLE = 0xcf;
+// command: subscribe busstop variable
+TRACI_CONST int CMD_SUBSCRIBE_BUSSTOP_VARIABLE = 0xdf;
+// response: subscribe busstop variable
+TRACI_CONST int RESPONSE_SUBSCRIBE_BUSSTOP_VARIABLE = 0xef;
+
+// command: subscribe parkingarea context
+TRACI_CONST int CMD_SUBSCRIBE_PARKINGAREA_CONTEXT = 0x04;
+// response: subscribe parkingarea context
+TRACI_CONST int RESPONSE_SUBSCRIBE_PARKINGAREA_CONTEXT = 0x14;
+// command: get parkingarea variable
+TRACI_CONST int CMD_GET_PARKINGAREA_VARIABLE = 0x24;
+// response: get parkingarea variable
+TRACI_CONST int RESPONSE_GET_PARKINGAREA_VARIABLE = 0x34;
+// command: set parkingarea variable
+TRACI_CONST int CMD_SET_PARKINGAREA_VARIABLE = 0x44;
+// command: subscribe parkingarea variable
+TRACI_CONST int CMD_SUBSCRIBE_PARKINGAREA_VARIABLE = 0x54;
+// response: subscribe parkingarea variable
+TRACI_CONST int RESPONSE_SUBSCRIBE_PARKINGAREA_VARIABLE = 0x64;
+
+// command: subscribe chargingstation context
+TRACI_CONST int CMD_SUBSCRIBE_CHARGINGSTATION_CONTEXT = 0x05;
+// response: subscribe chargingstation context
+TRACI_CONST int RESPONSE_SUBSCRIBE_CHARGINGSTATION_CONTEXT = 0x15;
+// command: get chargingstation variable
+TRACI_CONST int CMD_GET_CHARGINGSTATION_VARIABLE = 0x25;
+// response: get chargingstation variable
+TRACI_CONST int RESPONSE_GET_CHARGINGSTATION_VARIABLE = 0x35;
+// command: set chargingstation variable
+TRACI_CONST int CMD_SET_CHARGINGSTATION_VARIABLE = 0x45;
+// command: subscribe chargingstation variable
+TRACI_CONST int CMD_SUBSCRIBE_CHARGINGSTATION_VARIABLE = 0x55;
+// response: subscribe chargingstation variable
+TRACI_CONST int RESPONSE_SUBSCRIBE_CHARGINGSTATION_VARIABLE = 0x65;
+
+// command: subscribe routeprobe context
+TRACI_CONST int CMD_SUBSCRIBE_ROUTEPROBE_CONTEXT = 0x06;
+// response: subscribe routeprobe context
+TRACI_CONST int RESPONSE_SUBSCRIBE_ROUTEPROBE_CONTEXT = 0x16;
+// command: get routeprobe variable
+TRACI_CONST int CMD_GET_ROUTEPROBE_VARIABLE = 0x26;
+// response: get routeprobe variable
+TRACI_CONST int RESPONSE_GET_ROUTEPROBE_VARIABLE = 0x36;
+// command: set routeprobe variable
+TRACI_CONST int CMD_SET_ROUTEPROBE_VARIABLE = 0x46;
+// command: subscribe routeprobe variable
+TRACI_CONST int CMD_SUBSCRIBE_ROUTEPROBE_VARIABLE = 0x56;
+// response: subscribe routeprobe variable
+TRACI_CONST int RESPONSE_SUBSCRIBE_ROUTEPROBE_VARIABLE = 0x66;
+
+// command: subscribe calibrator context
+TRACI_CONST int CMD_SUBSCRIBE_CALIBRATOR_CONTEXT = 0x07;
+// response: subscribe calibrator context
+TRACI_CONST int RESPONSE_SUBSCRIBE_CALIBRATOR_CONTEXT = 0x17;
+// command: get calibrator variable
+TRACI_CONST int CMD_GET_CALIBRATOR_VARIABLE = 0x27;
+// response: get calibrator variable
+TRACI_CONST int RESPONSE_GET_CALIBRATOR_VARIABLE = 0x37;
+// command: set calibrator variable
+TRACI_CONST int CMD_SET_CALIBRATOR_VARIABLE = 0x47;
+// command: subscribe calibrator variable
+TRACI_CONST int CMD_SUBSCRIBE_CALIBRATOR_VARIABLE = 0x57;
+// response: subscribe calibrator variable
+TRACI_CONST int RESPONSE_SUBSCRIBE_CALIBRATOR_VARIABLE = 0x67;
+
+// command: subscribe rerouter context
+TRACI_CONST int CMD_SUBSCRIBE_REROUTER_CONTEXT = 0x08;
+// response: subscribe rerouter context
+TRACI_CONST int RESPONSE_SUBSCRIBE_REROUTER_CONTEXT = 0x18;
+// command: get rerouter variable
+TRACI_CONST int CMD_GET_REROUTER_VARIABLE = 0x28;
+// response: get rerouter variable
+TRACI_CONST int RESPONSE_GET_REROUTER_VARIABLE = 0x38;
+// command: set rerouter variable
+TRACI_CONST int CMD_SET_REROUTER_VARIABLE = 0x48;
+// command: subscribe rerouter variable
+TRACI_CONST int CMD_SUBSCRIBE_REROUTER_VARIABLE = 0x58;
+// response: subscribe rerouter variable
+TRACI_CONST int RESPONSE_SUBSCRIBE_REROUTER_VARIABLE = 0x68;
+
+// command: subscribe variablespeedsign context
+TRACI_CONST int CMD_SUBSCRIBE_VARIABLESPEEDSIGN_CONTEXT = 0x09;
+// response: subscribe variablespeedsign context
+TRACI_CONST int RESPONSE_SUBSCRIBE_VARIABLESPEEDSIGN_CONTEXT = 0x19;
+// command: get variablespeedsign variable
+TRACI_CONST int CMD_GET_VARIABLESPEEDSIGN_VARIABLE = 0x29;
+// response: get variablespeedsign variable
+TRACI_CONST int RESPONSE_GET_VARIABLESPEEDSIGN_VARIABLE = 0x39;
+// command: set variablespeedsign variable
+TRACI_CONST int CMD_SET_VARIABLESPEEDSIGN_VARIABLE = 0x49;
+// command: subscribe variablespeedsign variable
+TRACI_CONST int CMD_SUBSCRIBE_VARIABLESPEEDSIGN_VARIABLE = 0x59;
+// response: subscribe variablespeedsign variable
+TRACI_CONST int RESPONSE_SUBSCRIBE_VARIABLESPEEDSIGN_VARIABLE = 0x69;
+
+// command: subscribe meandata context
+TRACI_CONST int CMD_SUBSCRIBE_MEANDATA_CONTEXT = 0x0a;
+// response: subscribe meandata context
+TRACI_CONST int RESPONSE_SUBSCRIBE_MEANDATA_CONTEXT = 0x1a;
+// command: get meandata variable
+TRACI_CONST int CMD_GET_MEANDATA_VARIABLE = 0x2a;
+// response: get meandata variable
+TRACI_CONST int RESPONSE_GET_MEANDATA_VARIABLE = 0x3a;
+// command: set meandata variable, not used yet
+//TRACI_CONST int CMD_SET_MEANDATA_VARIABLE = 0x4a;
+// command: subscribe meandata variable
+TRACI_CONST int CMD_SUBSCRIBE_MEANDATA_VARIABLE = 0x5a;
+// response: subscribe meandata variable
+TRACI_CONST int RESPONSE_SUBSCRIBE_MEANDATA_VARIABLE = 0x6a;
+
+// command: subscribe overheadwire context
+TRACI_CONST int CMD_SUBSCRIBE_OVERHEADWIRE_CONTEXT = 0x0b;
+// response: subscribe overheadwire context
+TRACI_CONST int RESPONSE_SUBSCRIBE_OVERHEADWIRE_CONTEXT = 0x1b;
+// command: get overheadwire variable
+TRACI_CONST int CMD_GET_OVERHEADWIRE_VARIABLE = 0x2b;
+// response: get overheadwire variable
+TRACI_CONST int RESPONSE_GET_OVERHEADWIRE_VARIABLE = 0x3b;
+// command: set overheadwire variable
+TRACI_CONST int CMD_SET_OVERHEADWIRE_VARIABLE = 0x4b;
+// command: subscribe overheadwire variable
+TRACI_CONST int CMD_SUBSCRIBE_OVERHEADWIRE_VARIABLE = 0x5b;
+// response: subscribe overheadwire variable
+TRACI_CONST int RESPONSE_SUBSCRIBE_OVERHEADWIRE_VARIABLE = 0x6b;
 
 
 // ****************************************
@@ -397,7 +540,7 @@ TRACI_CONST int REMOVE_TELEPORT_ARRIVED = 0x04;
 TRACI_CONST int STAGE_WAITING_FOR_DEPART = 0x00;
 // person / container stopping
 TRACI_CONST int STAGE_WAITING = 0x01;
-// person walking / container transhiping
+// person walking
 TRACI_CONST int STAGE_WALKING = 0x02;
 // person riding / container being transported
 TRACI_CONST int STAGE_DRIVING = 0x03;
@@ -405,6 +548,8 @@ TRACI_CONST int STAGE_DRIVING = 0x03;
 TRACI_CONST int STAGE_ACCESS = 0x04;
 // stage for encoding abstract travel demand
 TRACI_CONST int STAGE_TRIP = 0x05;
+// person / container transhiping
+TRACI_CONST int STAGE_TRANSHIP = 0x06;
 
 // ****************************************
 // Stop Flags
@@ -488,6 +633,12 @@ TRACI_CONST int FILTER_TYPE_VCLASS = 0x08;
 
 // Only return vehicles of the given vType in context subscription result
 TRACI_CONST int FILTER_TYPE_VTYPE = 0x09;
+
+// Only return vehicles within field of vision in context subscription result
+TRACI_CONST int FILTER_TYPE_FIELD_OF_VISION = 0x0A;
+
+// Only return vehicles within the given lateral distance in context subscription result
+TRACI_CONST int FILTER_TYPE_LATERAL_DIST = 0x0B;
 
 // ****************************************
 // VARIABLE TYPES (for CMD_GET_*_VARIABLE)
@@ -612,7 +763,7 @@ TRACI_CONST int VAR_SPEED_LAT = 0x32;
 // maximum allowed/possible speed (get: vehicle types, lanes, set: edges, lanes)
 TRACI_CONST int VAR_MAXSPEED = 0x41;
 
-// position (2D) (get: vehicle, poi, inductionloop, areadetector; set: poi)
+// position (2D) (get: vehicle, poi, inductionloop, lane area detector; set: poi)
 TRACI_CONST int VAR_POSITION = 0x42;
 
 // position (3D) (get: vehicle, poi, set: poi)
@@ -621,7 +772,7 @@ TRACI_CONST int VAR_POSITION3D = 0x39;
 // angle (get: vehicle, poi; set: poi)
 TRACI_CONST int VAR_ANGLE = 0x43;
 
-// angle (get: vehicle types, lanes, arealdetector, set: lanes)
+// angle (get: vehicle types, lanes, lane area detector, set: lanes)
 TRACI_CONST int VAR_LENGTH = 0x44;
 
 // color (get: vehicles, vehicle types, polygons, pois)
@@ -672,7 +823,7 @@ TRACI_CONST int VAR_TYPE = 0x4f;
 // road id (get: vehicles)
 TRACI_CONST int VAR_ROAD_ID = 0x50;
 
-// lane id (get: vehicles, inductionloop, arealdetector)
+// lane id (get: vehicles, inductionloop, lane area detector)
 TRACI_CONST int VAR_LANE_ID = 0x51;
 
 // lane index (get: vehicle, edge)
@@ -833,6 +984,9 @@ TRACI_CONST int VAR_NEXT_STOPS = 0x73;
 
 // current acceleration (get: vehicle)
 TRACI_CONST int VAR_ACCELERATION = 0x72;
+
+// add log message (set: simulation)
+TRACI_CONST int CMD_MESSAGE = 0x65;
 
 // current time in seconds (get: simulation)
 TRACI_CONST int VAR_TIME = 0x66;
@@ -1016,4 +1170,3 @@ TRACI_CONST int VAR_HAS_VIEW = 0xa7;
 
 #undef TRACI_CONST
 
-#endif

@@ -1,29 +1,26 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2012-2019 German Aerospace Center (DLR) and others.
-// This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v2.0
-// which accompanies this distribution, and is available at
-// http://www.eclipse.org/legal/epl-v20.html
-// SPDX-License-Identifier: EPL-2.0
+// Copyright (C) 2012-2020 German Aerospace Center (DLR) and others.
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0/
+// This Source Code may also be made available under the following Secondary
+// Licenses when the conditions for such availability set forth in the Eclipse
+// Public License 2.0 are satisfied: GNU General Public License, version 2
+// or later which is available at
+// https://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html
+// SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later
 /****************************************************************************/
 /// @file    AStarRouter.h
 /// @author  Jakob Erdmann
 /// @author  Daniel Krajzewicz
 /// @author  Michael Behrisch
 /// @date    January 2012
-/// @version $Id$
 ///
 // A* Algorithm using euclidean distance heuristic.
 // Based on DijkstraRouter. For routing by effort a novel heuristic would be needed.
 /****************************************************************************/
-#ifndef AStarRouter_h
-#define AStarRouter_h
-
-
-// ===========================================================================
-// included modules
-// ===========================================================================
+#pragma once
 #include <config.h>
 
 #include <cassert>
@@ -42,7 +39,6 @@
 #include <utils/common/StringUtils.h>
 #include <utils/common/StdDefs.h>
 #include <utils/common/ToString.h>
-#include <utils/iodevices/BinaryInputDevice.h>
 #include <utils/iodevices/OutputDevice.h>
 #include "AStarLookupTable.h"
 #include "SUMOAbstractRouter.h"
@@ -74,8 +70,8 @@
  *  be reported as an error or as a warning.
  *
  */
-template<class E, class V, class BASE>
-class AStarRouter : public BASE {
+template<class E, class V>
+class AStarRouter : public SUMOAbstractRouter<E, V> {
 public:
     typedef AbstractLookupTable<E, V> LookupTable;
     typedef FullLookupTable<E, V> FLT;
@@ -88,7 +84,7 @@ public:
     class EdgeInfoComparator {
     public:
         /// Comparing method
-        bool operator()(const typename BASE::EdgeInfo* nod1, const typename BASE::EdgeInfo* nod2) const {
+        bool operator()(const typename SUMOAbstractRouter<E, V>::EdgeInfo* nod1, const typename SUMOAbstractRouter<E, V>::EdgeInfo* nod2) const {
             if (nod1->heuristicEffort == nod2->heuristicEffort) {
                 return nod1->edge->getNumericalID() > nod2->edge->getNumericalID();
             }
@@ -97,22 +93,24 @@ public:
     };
 
     /// Constructor
-    AStarRouter(const std::vector<E*>& edges, bool unbuildIsWarning, typename BASE::Operation operation, const std::shared_ptr<const LookupTable> lookup = 0) :
-        BASE("AStarRouter", unbuildIsWarning, operation),
+    AStarRouter(const std::vector<E*>& edges, bool unbuildIsWarning, typename SUMOAbstractRouter<E, V>::Operation operation, const std::shared_ptr<const LookupTable> lookup = nullptr,
+                const bool havePermissions = false, const bool haveRestrictions = false) :
+        SUMOAbstractRouter<E, V>("AStarRouter", unbuildIsWarning, operation, nullptr, havePermissions, haveRestrictions),
         myLookupTable(lookup),
         myMaxSpeed(NUMERICAL_EPS) {
         for (const E* const edge : edges) {
-            myEdgeInfos.push_back(typename BASE::EdgeInfo(edge));
+            myEdgeInfos.push_back(typename SUMOAbstractRouter<E, V>::EdgeInfo(edge));
             myMaxSpeed = MAX2(myMaxSpeed, edge->getSpeedLimit() * MAX2(1.0, edge->getLengthGeometryFactor()));
         }
     }
 
-    AStarRouter(const std::vector<typename BASE::EdgeInfo>& edgeInfos, bool unbuildIsWarning, typename BASE::Operation operation, const std::shared_ptr<const LookupTable> lookup = 0) :
-        BASE("AStarRouter", unbuildIsWarning, operation),
+    AStarRouter(const std::vector<typename SUMOAbstractRouter<E, V>::EdgeInfo>& edgeInfos, bool unbuildIsWarning, typename SUMOAbstractRouter<E, V>::Operation operation, const std::shared_ptr<const LookupTable> lookup = nullptr,
+                const bool havePermissions = false, const bool haveRestrictions = false) :
+        SUMOAbstractRouter<E, V>("AStarRouter", unbuildIsWarning, operation, nullptr, havePermissions, haveRestrictions),
         myLookupTable(lookup),
         myMaxSpeed(NUMERICAL_EPS) {
         for (const auto& edgeInfo : edgeInfos) {
-            myEdgeInfos.push_back(typename BASE::EdgeInfo(edgeInfo.edge));
+            myEdgeInfos.push_back(typename SUMOAbstractRouter<E, V>::EdgeInfo(edgeInfo.edge));
             myMaxSpeed = MAX2(myMaxSpeed, edgeInfo.edge->getSpeedLimit() * edgeInfo.edge->getLengthGeometryFactor());
         }
     }
@@ -121,7 +119,7 @@ public:
     virtual ~AStarRouter() {}
 
     virtual SUMOAbstractRouter<E, V>* clone() {
-        return new AStarRouter<E, V, BASE>(myEdgeInfos, this->myErrorMsgHandler == MsgHandler::getWarningInstance(), this->myOperation, myLookupTable);
+        return new AStarRouter<E, V>(myEdgeInfos, this->myErrorMsgHandler == MsgHandler::getWarningInstance(), this->myOperation, myLookupTable);
     }
 
     void init() {
@@ -138,17 +136,17 @@ public:
 
 
     /** @brief Builds the route between the given edges using the minimum travel time */
-    virtual bool compute(const E* from, const E* to, const V* const vehicle,
-                         SUMOTime msTime, std::vector<const E*>& into, bool silent = false) {
-        assert(from != 0 && to != 0);
+    bool compute(const E* from, const E* to, const V* const vehicle,
+                 SUMOTime msTime, std::vector<const E*>& into, bool silent = false) {
+        assert(from != nullptr && to != nullptr);
         // check whether from and to can be used
-        if (this->isProhibited(from, vehicle)) {
+        if (myEdgeInfos[from->getNumericalID()].prohibited || this->isProhibited(from, vehicle)) {
             if (!silent) {
                 this->myErrorMsgHandler->inform("Vehicle '" + Named::getIDSecure(vehicle) + "' is not allowed on source edge '" + from->getID() + "'.");
             }
             return false;
         }
-        if (this->isProhibited(to, vehicle)) {
+        if (myEdgeInfos[to->getNumericalID()].prohibited || this->isProhibited(to, vehicle)) {
             if (!silent) {
                 this->myErrorMsgHandler->inform("Vehicle '" + Named::getIDSecure(vehicle) + "' is not allowed on destination edge '" + to->getID() + "'.");
             }
@@ -236,7 +234,7 @@ public:
             for (const std::pair<const E*, const E*>& follower : minEdge->getViaSuccessors(vClass)) {
                 auto* const followerInfo = &(myEdgeInfos[follower.first->getNumericalID()]);
                 // check whether it can be used
-                if (this->isProhibited(follower.first, vehicle)) {
+                if (followerInfo->prohibited || this->isProhibited(follower.first, vehicle)) {
                     continue;
                 }
                 double effort = minimumInfo->effort + effortDelta;
@@ -275,14 +273,25 @@ public:
         std::cout << "visited " + toString(num_visited) + " edges (unsuccessful path length: " + toString(into.size()) + ")\n";
 #endif
         if (!silent) {
-            this->myErrorMsgHandler->inform("No connection between edge '" + from->getID() + "' and edge '" + to->getID() + "' found.");
+            this->myErrorMsgHandler->informf("No connection between edge '%' and edge '%' found.", from->getID(), to->getID());
         }
         return false;
     }
 
-public:
+
+    void prohibit(const std::vector<E*>& toProhibit) {
+        for (E* const edge : this->myProhibited) {
+            myEdgeInfos[edge->getNumericalID()].prohibited = false;
+        }
+        for (E* const edge : toProhibit) {
+            myEdgeInfos[edge->getNumericalID()].prohibited = true;
+        }
+        this->myProhibited = toProhibit;
+    }
+
+
     /// Builds the path from marked edges
-    void buildPathFrom(const typename BASE::EdgeInfo* rbegin, std::vector<const E*>& edges) {
+    void buildPathFrom(const typename SUMOAbstractRouter<E, V>::EdgeInfo* rbegin, std::vector<const E*>& edges) {
         std::vector<const E*> tmp;
         while (rbegin != 0) {
             tmp.push_back(rbegin->edge);
@@ -293,12 +302,12 @@ public:
 
 protected:
     /// The container of edge information
-    std::vector<typename BASE::EdgeInfo> myEdgeInfos;
+    std::vector<typename SUMOAbstractRouter<E, V>::EdgeInfo> myEdgeInfos;
 
     /// A container for reusage of the min edge heap
-    std::vector<typename BASE::EdgeInfo*> myFrontierList;
+    std::vector<typename SUMOAbstractRouter<E, V>::EdgeInfo*> myFrontierList;
     /// @brief list of visited Edges (for resetting)
-    std::vector<typename BASE::EdgeInfo*> myFound;
+    std::vector<typename SUMOAbstractRouter<E, V>::EdgeInfo*> myFound;
 
     EdgeInfoComparator myComparator;
 
@@ -308,9 +317,3 @@ protected:
     /// @brief maximum speed in the network
     double myMaxSpeed;
 };
-
-
-#endif
-
-/****************************************************************************/
-

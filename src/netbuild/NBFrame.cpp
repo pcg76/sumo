@@ -1,26 +1,24 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2019 German Aerospace Center (DLR) and others.
-// This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v2.0
-// which accompanies this distribution, and is available at
-// http://www.eclipse.org/legal/epl-v20.html
-// SPDX-License-Identifier: EPL-2.0
+// Copyright (C) 2001-2020 German Aerospace Center (DLR) and others.
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0/
+// This Source Code may also be made available under the following Secondary
+// Licenses when the conditions for such availability set forth in the Eclipse
+// Public License 2.0 are satisfied: GNU General Public License, version 2
+// or later which is available at
+// https://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html
+// SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later
 /****************************************************************************/
 /// @file    NBFrame.cpp
 /// @author  Daniel Krajzewicz
 /// @author  Jakob Erdmann
 /// @author  Michael Behrisch
 /// @date    09.05.2011
-/// @version $Id$
 ///
 // Sets and checks options for netbuild
 /****************************************************************************/
-
-
-// ===========================================================================
-// included modules
-// ===========================================================================
 #include <config.h>
 
 #include <string>
@@ -57,6 +55,9 @@ NBFrame::fillOptions(bool forNetgen) {
     oc.addSynonyme("default.lanewidth", "lanewidth", true);
     oc.addDescription("default.lanewidth", "Building Defaults", "The default width of lanes");
 
+    oc.doRegister("default.spreadtype", new Option_String("right"));
+    oc.addDescription("default.spreadtype", "Building Defaults", "The default method for computing lane shapes from edge shapes");
+
     oc.doRegister("default.speed", 'S', new Option_Float((double) 13.89));
     oc.addSynonyme("default.speed", "speed", true);
     oc.addDescription("default.speed", "Building Defaults", "The default speed on an edge (in m/s)");
@@ -64,6 +65,9 @@ NBFrame::fillOptions(bool forNetgen) {
     oc.doRegister("default.priority", 'P', new Option_Integer(-1));
     oc.addSynonyme("default.priority", "priority", true);
     oc.addDescription("default.priority", "Building Defaults", "The default priority of an edge");
+
+    oc.doRegister("default.type", new Option_String());
+    oc.addDescription("default.type", "Building Defaults", "The default edge type");
 
     oc.doRegister("default.sidewalk-width", new Option_Float((double) 2.0));
     oc.addDescription("default.sidewalk-width", "Building Defaults", "The default width of added sidewalks");
@@ -83,6 +87,9 @@ NBFrame::fillOptions(bool forNetgen) {
     oc.doRegister("default.junctions.radius", new Option_Float(4));
     oc.addDescription("default.junctions.radius", "Building Defaults", "The default turning radius of intersections");
 
+    oc.doRegister("default.connection-length", new Option_Float((double) NBEdge::UNSPECIFIED_LOADED_LENGTH));
+    oc.addDescription("default.connection-length", "Building Defaults", "The default length when overriding connection lengths");
+
     oc.doRegister("default.right-of-way", new Option_String("default"));
     oc.addDescription("default.right-of-way", "Building Defaults", "The default algorithm for computing right of way rules ('default', 'edgePriority')");
 
@@ -95,6 +102,12 @@ NBFrame::fillOptions(bool forNetgen) {
 
     oc.doRegister("numerical-ids", new Option_Bool(false));
     oc.addDescription("numerical-ids", "Processing", "Remaps alphanumerical IDs of nodes and edges to ensure that all IDs are integers");
+
+    oc.doRegister("numerical-ids.node-start", new Option_Integer(std::numeric_limits<int>::max()));
+    oc.addDescription("numerical-ids.node-start", "Processing", "Remaps IDs of nodes to integers starting at INT");
+
+    oc.doRegister("numerical-ids.edge-start", new Option_Integer(std::numeric_limits<int>::max()));
+    oc.addDescription("numerical-ids.edge-start", "Processing", "Remaps IDs of edges to integers starting at INT");
 
     /// @todo not working for netgen
     oc.doRegister("reserved-ids", new Option_FileName());
@@ -117,6 +130,12 @@ NBFrame::fillOptions(bool forNetgen) {
 
     oc.doRegister("no-turnarounds.except-deadend", new Option_Bool(false));
     oc.addDescription("no-turnarounds.except-deadend", "Junctions", "Disables building turnarounds except at dead end junctions");
+
+    oc.doRegister("no-turnarounds.except-turnlane", new Option_Bool(false));
+    oc.addDescription("no-turnarounds.except-turnlane", "Junctions", "Disables building turnarounds except at at junctions with a dedicated turning lane");
+
+    oc.doRegister("no-turnarounds.fringe", new Option_Bool(false));
+    oc.addDescription("no-turnarounds.fringe", "Junctions", "Disables building turnarounds at fringe junctions");
 
     oc.doRegister("no-left-connections", new Option_Bool(false));
     oc.addDescription("no-left-connections", "Junctions", "Disables building connections to left");
@@ -188,8 +207,14 @@ NBFrame::fillOptions(bool forNetgen) {
         oc.doRegister("railway.topology.repair.connect-straight", new Option_Bool(false));
         oc.addDescription("railway.topology.repair.connect-straight", "Railway", "Allow bidiretional rail use wherever rails with opposite directions meet at a straight angle");
 
+        oc.doRegister("railway.topology.repair.stop-turn", new Option_Bool(false));
+        oc.addDescription("railway.topology.repair.stop-turn", "Railway", "Add turn-around connections at all loaded stops.");
+
         oc.doRegister("railway.topology.all-bidi", new Option_Bool(false));
         oc.addDescription("railway.topology.all-bidi", "Railway", "Make all rails usable in both direction");
+
+        oc.doRegister("railway.topology.all-bidi.input-file", new Option_FileName());
+        oc.addDescription("railway.topology.all-bidi.input-file", "Railway", "Make all rails edge ids from FILE usable in both direction");
 
         oc.doRegister("railway.access-distance", new Option_Float(150.f));
         oc.addDescription("railway.access-distance", "Railway", "The search radius for finding suitable road accesses for rail stops");
@@ -202,6 +227,9 @@ NBFrame::fillOptions(bool forNetgen) {
         oc.doRegister("railway.access-factor", new Option_Float(1.5));
         oc.addDescription("railway.access-factor", "Railway", "The walking length of the access is computed as air-line distance multiplied by FLOAT");
         oc.addSynonyme("railway.access-factor", "osm.stop-output.footway-access-factor", true);
+
+        oc.doRegister("ptstop-output.no-bidi", new Option_Bool(false));
+        oc.addDescription("ptstop-output.no-bidi", "Processing", "Skips automatic generation of stops on the bidi-edge of a loaded stop");
     }
 
     oc.doRegister("geometry.max-grade", new Option_Float(10));
@@ -222,6 +250,9 @@ NBFrame::fillOptions(bool forNetgen) {
     oc.addSynonyme("offset.y", "y-offset-to-apply", true);
     oc.addDescription("offset.y", "Processing", "Adds FLOAT to net y-positions");
 
+    oc.doRegister("offset.z", new Option_Float(0));
+    oc.addDescription("offset.z", "Processing", "Adds FLOAT to net z-positions");
+
     oc.doRegister("flip-y-axis", new Option_Bool(false));
     oc.addSynonyme("flip-y-axis", "flip-y");
     oc.addDescription("flip-y-axis", "Processing", "Flips the y-coordinate along zero");
@@ -235,6 +266,9 @@ NBFrame::fillOptions(bool forNetgen) {
 
     oc.doRegister("opposites.guess.fix-lengths", new Option_Bool(false));
     oc.addDescription("opposites.guess.fix-lengths", "Processing", "Ensure that opposite edges have the same length");
+
+    oc.doRegister("fringe.guess", new Option_Bool(false));
+    oc.addDescription("fringe.guess", "Processing", "Enable guessing of network fringe nodes");
 
     oc.doRegister("lefthand", new Option_Bool(false));
     oc.addDescription("lefthand", "Processing", "Assumes left-hand traffic on the network");
@@ -405,6 +439,10 @@ NBFrame::fillOptions(bool forNetgen) {
     oc.addDescription("tls.uncontrolled-within", "TLS Building",
                       "Do not control edges that lie fully within a joined traffic light. This may cause collisions but allows old traffic light plans to be used");
 
+    oc.doRegister("tls.ignore-internal-junction-jam", new Option_Bool(false));
+    oc.addDescription("tls.ignore-internal-junction-jam", "TLS Building",
+                      "Do not build mutually conflicting response matrix, potentially ignoring vehicles that are stuck at an internal junction when their phase has ended");
+
     if (!forNetgen) {
         oc.doRegister("tls.guess-signals", new Option_Bool(false));
         oc.addDescription("tls.guess-signals", "TLS Building", "Interprets tls nodes surrounding an intersection as signal positions for a larger TLS. This is typical pattern for OSM-derived networks");
@@ -476,6 +514,12 @@ NBFrame::fillOptions(bool forNetgen) {
 
     oc.doRegister("tls.max-dur", new Option_Integer(50));
     oc.addDescription("tls.max-dur", "TLS Building", "Default maximum phase duration for traffic lights with variable phase length");
+
+    oc.doRegister("tls.group-signals", new Option_Bool(false));
+    oc.addDescription("tls.group-signals", "TLS Building", "Assign the same tls link index to connections that share the same states");
+
+    oc.doRegister("tls.ungroup-signals", new Option_Bool(false));
+    oc.addDescription("tls.ungroup-signals", "TLS Building", "Assign a distinct tls link index to every connection");
 
     // edge pruning
     oc.doRegister("keep-edges.min-speed", new Option_Float(-1));
@@ -564,6 +608,10 @@ NBFrame::fillOptions(bool forNetgen) {
         oc.addSynonyme("ramps.ramp-length", "ramp-guess.ramp-length", true);
         oc.addDescription("ramps.ramp-length", "Ramp Guessing", "Use FLOAT as ramp-length");
 
+        //The Weaving Length Limit for Short Free Onramps, Chiu Liu, Zhongren WangPhD even suggest 70m
+        oc.doRegister("ramps.min-weave-length", new Option_Float(50));
+        oc.addDescription("ramps.min-weave-length", "Ramp Guessing", "Use FLOAT as minimum ramp-length");
+
         oc.doRegister("ramps.set", new Option_StringVector());
         oc.addSynonyme("ramps.set", "ramp-guess.explicite", true);
         oc.addDescription("ramps.set", "Ramp Guessing", "Tries to handle the given edges as ramps");
@@ -629,6 +677,16 @@ NBFrame::checkOptions() {
     }
     if (oc.isDefault("railway.topology.repair") && oc.getBool("railway.topology.repair.connect-straight")) {
         oc.set("railway.topology.repair", "true");
+    }
+    if (oc.isDefault("railway.topology.all-bidi") && !oc.isDefault("railway.topology.all-bidi.input-file")) {
+        oc.set("railway.topology.all-bidi", "true");
+    }
+    if (oc.isDefault("railway.topology.repair.stop-turn") && !oc.isDefault("railway.topology.repair")) {
+        oc.set("railway.topology.repair.stop-turn", "true");
+    }
+    if (!SUMOXMLDefinitions::LaneSpreadFunctions.hasString(oc.getString("default.spreadtype"))) {
+        WRITE_ERROR("Unknown value for default.spreadtype '" + oc.getString("default.spreadtype") + "'.");
+        ok = false;
     }
     return ok;
 }

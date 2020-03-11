@@ -1,28 +1,25 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2019 German Aerospace Center (DLR) and others.
-// This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v2.0
-// which accompanies this distribution, and is available at
-// http://www.eclipse.org/legal/epl-v20.html
-// SPDX-License-Identifier: EPL-2.0
+// Copyright (C) 2001-2020 German Aerospace Center (DLR) and others.
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0/
+// This Source Code may also be made available under the following Secondary
+// Licenses when the conditions for such availability set forth in the Eclipse
+// Public License 2.0 are satisfied: GNU General Public License, version 2
+// or later which is available at
+// https://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html
+// SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later
 /****************************************************************************/
 /// @file    PositionVector.h
 /// @author  Daniel Krajzewicz
 /// @author  Jakob Erdmann
 /// @author  Michael Behrisch
 /// @date    Sept 2002
-/// @version $Id$
 ///
 // A list of positions
 /****************************************************************************/
-#ifndef PositionVector_h
-#define PositionVector_h
-
-
-// ===========================================================================
-// included modules
-// ===========================================================================
+#pragma once
 #include <config.h>
 
 #include <vector>
@@ -253,10 +250,10 @@ public:
     /// @brief get subpart of a position vector using index and a cout
     PositionVector getSubpartByIndex(int beginIndex, int count) const;
 
-    /// @brief short as polygon CV by angle
+    /// @brief sort as polygon CW by angle
     void sortAsPolyCWByAngle();
 
-    /// @brief shory by increasing X-Y Psitions
+    /// @brief sort by increasing X-Y Positions
     void sortByIncreasingXY();
 
     /// @brief extrapolate position vector
@@ -277,11 +274,15 @@ public:
     /// @brief move position vector to side using a custom offset for each geometry point
     void move2side(std::vector<double> amount, double maxExtension = 100);
 
-    /// @brief get angle  in certain position of position vector
+    /// @brief get angle in certain position of position vector
     double angleAt2D(int pos) const;
 
-    /// @brief inserts p between the two closest positions and returns the insertion index
-    int insertAtClosest(const Position& p);
+    /**@brief inserts p between the two closest positions
+     * @param p position to be inserted
+     * @param interpolateZ flag to enable/disable interpolation of Z Value between the two closest positions
+     * @return the insertion index
+     */
+    int insertAtClosest(const Position& p, bool interpolateZ);
 
     /// @brief removes the point closest to p and return the removal index
     int removeClosest(const Position& p);
@@ -351,6 +352,12 @@ public:
     /// @brief closest 2D-distance to point p (or -1 if perpendicular is true and the point is beyond this vector)
     double distance2D(const Position& p, bool perpendicular = false) const;
 
+    /// @brief insert in front a Position
+    void push_front(const Position& p);
+
+    /// @brief pop first Position
+    void pop_front();
+
     /// @brief insert in back a non double position
     void push_back_noDoublePos(const Position& p);
 
@@ -410,9 +417,3 @@ private:
     /// @brief return whether the line segments defined by Line p11,p12 and Line p21,p22 intersect
     static bool intersects(const Position& p11, const Position& p12, const Position& p21, const Position& p22, const double withinDist = 0., double* x = 0, double* y = 0, double* mu = 0);
 };
-
-
-#endif
-
-/****************************************************************************/
-

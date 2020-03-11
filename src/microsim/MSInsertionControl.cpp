@@ -1,11 +1,15 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2019 German Aerospace Center (DLR) and others.
-// This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v2.0
-// which accompanies this distribution, and is available at
-// http://www.eclipse.org/legal/epl-v20.html
-// SPDX-License-Identifier: EPL-2.0
+// Copyright (C) 2001-2020 German Aerospace Center (DLR) and others.
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0/
+// This Source Code may also be made available under the following Secondary
+// Licenses when the conditions for such availability set forth in the Eclipse
+// Public License 2.0 are satisfied: GNU General Public License, version 2
+// or later which is available at
+// https://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html
+// SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later
 /****************************************************************************/
 /// @file    MSInsertionControl.cpp
 /// @author  Christian Roessel
@@ -14,15 +18,9 @@
 /// @author  Michael Behrisch
 /// @author  Jakob Erdmann
 /// @date    Mon, 12 Mar 2001
-/// @version $Id$
 ///
 // Inserts vehicles into the network when their departure time is reached
 /****************************************************************************/
-
-
-// ===========================================================================
-// included modules
-// ===========================================================================
 #include <config.h>
 
 #include <iostream>
@@ -214,22 +212,22 @@ MSInsertionControl::determineCandidates(SUMOTime time) {
             pars->repetitionsDone++;
             // try to build the vehicle
             if (vehControl.getVehicle(newPars->id) == nullptr) {
-                const MSRoute* route = MSRoute::dictionary(pars->routeid);
-                MSVehicleType* vtype = vehControl.getVType(pars->vtypeid, MSRouteHandler::getParsingRNG());
-                SUMOVehicle* vehicle = vehControl.buildVehicle(newPars, route, vtype, !MSGlobals::gCheckRoutes);
+                const MSRoute* const route = MSRoute::dictionary(pars->routeid);
+                MSVehicleType* const vtype = vehControl.getVType(pars->vtypeid, MSRouteHandler::getParsingRNG());
+                SUMOVehicle* const vehicle = vehControl.buildVehicle(newPars, route, vtype, !MSGlobals::gCheckRoutes);
                 int quota = vehControl.getQuota();
                 if (quota > 0) {
                     vehControl.addVehicle(newPars->id, vehicle);
                     add(vehicle);
                     i->index++;
                     while (--quota > 0) {
-                        SUMOVehicleParameter* quotaPars = new SUMOVehicleParameter(*pars);
+                        SUMOVehicleParameter* const quotaPars = new SUMOVehicleParameter(*pars);
                         quotaPars->id = pars->id + "." + toString(i->index);
                         quotaPars->depart = pars->repetitionProbability > 0 ? time :
                                             (SUMOTime)(pars->depart + pars->repetitionsDone * pars->repetitionOffset) + computeRandomDepartOffset();
-                        SUMOVehicle* vehicle = vehControl.buildVehicle(quotaPars, route, vtype, !MSGlobals::gCheckRoutes);
-                        vehControl.addVehicle(quotaPars->id, vehicle);
-                        add(vehicle);
+                        SUMOVehicle* const quotaVehicle = vehControl.buildVehicle(quotaPars, route, vtype, !MSGlobals::gCheckRoutes);
+                        vehControl.addVehicle(quotaPars->id, quotaVehicle);
+                        add(quotaVehicle);
                         i->index++;
                     }
                 } else {
@@ -301,17 +299,15 @@ MSInsertionControl::getPendingEmits(const MSLane* lane) {
     if (MSNet::getInstance()->getCurrentTimeStep() > myPendingEmitsUpdateTime) {
         // updated pending emits (only once per time step)
         myPendingEmitsForLane.clear();
-        for (MSVehicleContainer::VehicleVector::const_iterator veh = myPendingEmits.begin(); veh != myPendingEmits.end(); ++veh) {
-            const MSLane* lane = (*veh)->getLane();
-            if (lane != nullptr) {
-                myPendingEmitsForLane[lane]++;
+        for (const SUMOVehicle* const veh : myPendingEmits) {
+            const MSLane* const vlane = veh->getLane();
+            if (vlane != nullptr) {
+                myPendingEmitsForLane[vlane]++;
             } else {
                 // no (tentative) departLane was set, increase count for all
                 // lanes of the depart edge
-                const MSEdge* edge = (*veh)->getEdge();
-                const std::vector<MSLane*>& lanes = edge->getLanes();
-                for (std::vector<MSLane*>::const_iterator i = lanes.begin(); i != lanes.end(); ++i) {
-                    myPendingEmitsForLane[*i]++;
+                for (const MSLane* const l : veh->getEdge()->getLanes()) {
+                    myPendingEmitsForLane[l]++;
                 }
             }
         }
@@ -357,7 +353,6 @@ MSInsertionControl::computeRandomDepartOffset() const {
         return 0;
     }
 }
-
 
 
 /****************************************************************************/

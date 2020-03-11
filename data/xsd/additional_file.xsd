@@ -32,6 +32,10 @@
             <xsd:element name="trainStop" type="busStopType" minOccurs="0"/>
             <xsd:element name="containerStop" type="containerStopType" minOccurs="0"/>
             <xsd:element name="chargingStation" type="chargingStationType" minOccurs="0"/>
+            <xsd:element name="overheadWireSegment" type="overheadWireSegmentType" minOccurs="0"/>
+            <xsd:element name="tractionSubstation" type="tractionSubstationType" minOccurs="0"/>
+            <xsd:element name="overheadWireClamp" type="overheadWireClampType" minOccurs="0"/>
+            <xsd:element name="overheadWire" type="overheadWireType" minOccurs="0"/>
             <xsd:element name="parkingArea" type="parkingAreaType" minOccurs="0"/>
             <xsd:element name="calibrator" type="calibratorType" minOccurs="0"/>
             <xsd:element name="vaporizer" type="vaporizerType" minOccurs="0"/>
@@ -58,9 +62,8 @@
                 </xsd:complexType>
             </xsd:element>
         </xsd:choice>
-
     </xsd:complexType>
-    
+
     <xsd:complexType name="rerouterValuesType">
         <xsd:choice maxOccurs="unbounded">
             <xsd:element name="param" type="paramType" minOccurs="0" maxOccurs="unbounded"/>
@@ -84,19 +87,19 @@
                         <xsd:element name="destProbReroute">
                             <xsd:complexType>
                                 <xsd:attribute name="id" type="idType" use="required"/>
-                                <xsd:attribute name="probability" type="positiveFloatType"/>
+                                <xsd:attribute name="probability" type="nonNegativeFloatType"/>
                             </xsd:complexType>
                         </xsd:element>
                         <xsd:element name="routeProbReroute">
                             <xsd:complexType>
                                 <xsd:attribute name="id" type="idType" use="required"/>
-                                <xsd:attribute name="probability" type="positiveFloatType"/>
+                                <xsd:attribute name="probability" type="nonNegativeFloatType"/>
                             </xsd:complexType>
                         </xsd:element>
                         <xsd:element name="parkingAreaReroute">
                             <xsd:complexType>
                                 <xsd:attribute name="id" type="idType" use="required"/>
-                                <xsd:attribute name="probability" type="positiveFloatType"/>
+                                <xsd:attribute name="probability" type="nonNegativeFloatType"/>
                                 <xsd:attribute name="visible" type="boolType"/>
                             </xsd:complexType>
                         </xsd:element>
@@ -158,13 +161,12 @@
 
     <xsd:complexType name="e3DetectorType">
         <xsd:sequence>
-            <xsd:element name="detEntry" type="detEntryExitType" minOccurs="1" maxOccurs="unbounded"/>
-            <xsd:element name="detExit" type="detEntryExitType" minOccurs="1" maxOccurs="unbounded"/>
-            <xsd:choice minOccurs="0" maxOccurs="unbounded">
-                <xsd:element name="param" type="paramType" minOccurs="0" maxOccurs="unbounded"/>
-                <xsd:element name="detEntry" type="detEntryExitType" minOccurs="0" maxOccurs="unbounded"/>
-                <xsd:element name="detExit" type="detEntryExitType" minOccurs="0" maxOccurs="unbounded"/>
+            <xsd:element name="param" type="paramType" minOccurs="0" maxOccurs="unbounded"/>
+            <xsd:choice minOccurs="2" maxOccurs="unbounded">
+                <xsd:element name="detEntry" type="detEntryExitType" minOccurs="1" maxOccurs="unbounded"/>
+                <xsd:element name="detExit" type="detEntryExitType" minOccurs="1" maxOccurs="unbounded"/>
             </xsd:choice>
+            <xsd:element name="param" type="paramType" minOccurs="0" maxOccurs="unbounded"/>
         </xsd:sequence>
         <xsd:attribute name="id" type="detectorIdType" use="required"/>
         <xsd:attribute name="freq" type="positiveFloatType" use="required"/>
@@ -241,12 +243,13 @@
             <xsd:element name="wautSwitch" type="wautSwitchType" minOccurs="0" maxOccurs="unbounded"/>
         </xsd:sequence>
         <xsd:attribute name="id" type="idType" use="required"/>
-        <xsd:attribute name="refTime" type="xsd:int" use="required"/>
+        <xsd:attribute name="refTime" type="timeType"/>
         <xsd:attribute name="startProg" type="xsd:string" use="required"/>
+        <xsd:attribute name="period" type="timeType"/>
     </xsd:complexType>
 
     <xsd:complexType name="wautSwitchType">
-        <xsd:attribute name="time" type="xsd:int" use="required"/>
+        <xsd:attribute name="time" type="timeType" use="required"/>
         <xsd:attribute name="to" type="xsd:string" use="required"/>
     </xsd:complexType>
 
@@ -309,19 +312,19 @@
                         <xsd:element name="destProbReroute">
                             <xsd:complexType>
                                 <xsd:attribute name="id" type="idType" use="required"/>
-                                <xsd:attribute name="probability" type="positiveFloatType"/>
+                                <xsd:attribute name="probability" type="nonNegativeFloatType"/>
                             </xsd:complexType>
                         </xsd:element>
                         <xsd:element name="routeProbReroute">
                             <xsd:complexType>
                                 <xsd:attribute name="id" type="idType" use="required"/>
-                                <xsd:attribute name="probability" type="positiveFloatType"/>
+                                <xsd:attribute name="probability" type="nonNegativeFloatType"/>
                             </xsd:complexType>
                         </xsd:element>
                         <xsd:element name="parkingAreaReroute">
                             <xsd:complexType>
                                 <xsd:attribute name="id" type="idType" use="required"/>
-                                <xsd:attribute name="probability" type="positiveFloatType"/>
+                                <xsd:attribute name="probability" type="nonNegativeFloatType"/>
                                 <xsd:attribute name="visible" type="boolType"/>
                             </xsd:complexType>
                         </xsd:element>
@@ -334,7 +337,7 @@
         <xsd:attribute name="id" type="idType" use="required"/>
         <xsd:attribute name="edges" type="xsd:string" use="optional"/>
         <xsd:attribute name="file" type="xsd:string" use="optional"/>
-        <xsd:attribute name="probability" type="positiveFloatType"/>
+        <xsd:attribute name="probability" type="nonNegativeFloatType"/>
         <xsd:attribute name="vTypes" type="xsd:string" use="optional"/>
         <xsd:attribute name="timeThreshold" type="nonNegativeFloatType" use="optional"/>
         <xsd:attribute name="pos" type="xsd:string" use="optional"/>
@@ -397,6 +400,47 @@
         <xsd:attribute name="efficiency" type="xsd:float" use="optional"/>
         <xsd:attribute name="chargeInTransit" type="xsd:float" use="optional"/>
         <xsd:attribute name="chargeDelay" type="xsd:float" use="optional"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="overheadWireSegmentType">
+        <xsd:sequence>
+            <xsd:element name="param" type="paramType" minOccurs="0" maxOccurs="unbounded"/>
+        </xsd:sequence>
+        <xsd:attribute name="id" type="idType" use="required"/>
+        <xsd:attribute name="lane" type="xsd:string" use="required"/>
+        <xsd:attribute name="voltageSource" type="boolType" use="optional"/>
+        <xsd:attribute name="startPos" type="xsd:float" use="optional"/>
+        <xsd:attribute name="endPos" type="xsd:float" use="optional"/>
+        <xsd:attribute name="friendlyPos" type="boolType" use="optional"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="tractionSubstationType">
+        <xsd:sequence>
+            <xsd:element name="param" type="paramType" minOccurs="0" maxOccurs="unbounded"/>
+        </xsd:sequence>
+        <xsd:attribute name="id" type="idType" use="required"/>
+        <xsd:attribute name="voltage" type="xsd:float" use="optional"/>
+        <xsd:attribute name="currentLimit" type="xsd:float" use="optional"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="overheadWireClampType">
+        <xsd:sequence>
+            <xsd:element name="param" type="paramType" minOccurs="0" maxOccurs="unbounded"/>
+        </xsd:sequence>
+        <xsd:attribute name="id" type="idType" use="required"/>
+        <xsd:attribute name="substationId" type="xsd:string" use="required"/>
+        <xsd:attribute name="idSegmentStartClamp" type="xsd:string" use="required"/>
+        <xsd:attribute name="idSegmentEndClamp" type="xsd:string" use="required"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="overheadWireType">
+        <xsd:sequence>
+            <xsd:element name="param" type="paramType" minOccurs="0" maxOccurs="unbounded"/>
+        </xsd:sequence>
+        <xsd:attribute name="segments" type="xsd:string" use="required"/>
+        <xsd:attribute name="substationId" type="xsd:string" use="required"/>
+        <xsd:attribute name="clamps" type="xsd:string" use="optional"/>
+        <xsd:attribute name="forbiddenInnerLanes" type="xsd:string" use="optional"/>
     </xsd:complexType>
 
     <xsd:complexType name="accessType">

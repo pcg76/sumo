@@ -1,26 +1,24 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2019 German Aerospace Center (DLR) and others.
-// This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v2.0
-// which accompanies this distribution, and is available at
-// http://www.eclipse.org/legal/epl-v20.html
-// SPDX-License-Identifier: EPL-2.0
+// Copyright (C) 2001-2020 German Aerospace Center (DLR) and others.
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0/
+// This Source Code may also be made available under the following Secondary
+// Licenses when the conditions for such availability set forth in the Eclipse
+// Public License 2.0 are satisfied: GNU General Public License, version 2
+// or later which is available at
+// https://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html
+// SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later
 /****************************************************************************/
 /// @file    NLBuilder.cpp
 /// @author  Daniel Krajzewicz
 /// @author  Jakob Erdmann
 /// @author  Michael Behrisch
 /// @date    Mon, 9 Jul 2001
-/// @version $Id$
 ///
 // The main interface for loading a microsim
 /****************************************************************************/
-
-
-// ===========================================================================
-// included modules
-// ===========================================================================
 #include <config.h>
 
 #include <iostream>
@@ -31,7 +29,6 @@
 #include <utils/common/MsgHandler.h>
 #include <utils/common/StringTokenizer.h>
 #include <utils/common/SystemFrame.h>
-#include <utils/iodevices/BinaryInputDevice.h>
 #include <utils/options/Option.h>
 #include <utils/options/OptionsCont.h>
 #include <utils/options/OptionsIO.h>
@@ -42,6 +39,9 @@
 #include <utils/vehicle/SUMORouteLoaderControl.h>
 #include <utils/vehicle/SUMORouteLoader.h>
 #include <utils/xml/XMLSubSys.h>
+#ifdef HAVE_FOX
+#include <utils/foxtools/MsgHandlerSynchronized.h>
+#endif
 #include <mesosim/MEVehicleControl.h>
 #include <microsim/MSVehicleControl.h>
 #include <microsim/MSVehicleTransfer.h>
@@ -53,6 +53,7 @@
 #include <microsim/MSFrame.h>
 #include <microsim/MSEdgeWeightsStorage.h>
 #include <microsim/MSStateHandler.h>
+#include <microsim/MSDriverState.h>
 #include <traci-server/TraCIServer.h>
 
 #include "NLHandler.h"
@@ -126,9 +127,6 @@ NLBuilder::build() {
     if (myOptions.getBool("no-internal-links") && myXMLHandler.haveSeenInternalEdge()) {
         WRITE_WARNING("Network contains internal links but option --no-internal-links is set. Vehicles will 'jump' across junctions and thus underestimate route lengths and travel times.");
     }
-    if (myOptions.getString("lanechange.duration") != "0" && myXMLHandler.haveSeenNeighs()) {
-        throw ProcessError("Network contains explicit neigh lanes which do not work together with option --lanechange.duration.");
-    }
     buildNet();
     // @note on loading order constraints:
     // - additional-files before route-files and state-files due to referencing
@@ -146,6 +144,38 @@ NLBuilder::build() {
         }
         if (myXMLHandler.haveSeenAdditionalSpeedRestrictions()) {
             myNet.getEdgeControl().setAdditionalRestrictions();
+        }
+    }
+    if (myOptions.getBool("junction-taz")) {
+        // create a TAZ for every junction
+        const MSJunctionControl& junctions = myNet.getJunctionControl();
+        for (auto it = junctions.begin(); it != junctions.end(); it++) {
+            const std::string sinkID = it->first + "-sink";
+            const std::string sourceID = it->first + "-source";
+            if (MSEdge::dictionary(sinkID) == nullptr && MSEdge::dictionary(sourceID) == nullptr) {
+                // sink must be built and addd before source
+                MSEdge* sink = myEdgeBuilder.buildEdge(sinkID, SumoXMLEdgeFunc::CONNECTOR, "", "", -1, 0);
+                MSEdge* source = myEdgeBuilder.buildEdge(sourceID, SumoXMLEdgeFunc::CONNECTOR, "", "", -1, 0);
+                sink->setOtherTazConnector(source);
+                source->setOtherTazConnector(sink);
+                MSEdge::dictionary(sinkID, sink);
+                MSEdge::dictionary(sourceID, source);
+                sink->initialize(new std::vector<MSLane*>());
+                source->initialize(new std::vector<MSLane*>());
+                const MSJunction* junction = it->second;
+                for (const MSEdge* edge : junction->getIncoming()) {
+                    if (!edge->isInternal()) {
+                        const_cast<MSEdge*>(edge)->addSuccessor(sink);
+                    }
+                }
+                for (const MSEdge* edge : junction->getOutgoing()) {
+                    if (!edge->isInternal()) {
+                        source->addSuccessor(const_cast<MSEdge*>(edge));
+                    }
+                }
+            } else {
+                WRITE_WARNINGF("A TAZ with id '%' already exists. Not building junction TAZ.", it->first)
+            }
         }
     }
     // load weights if wished
@@ -182,9 +212,8 @@ NLBuilder::build() {
     }
     // load the previous state if wished
     if (myOptions.isSet("load-state")) {
-        long before = SysUtils::getCurrentMillis();
         const std::string& f = myOptions.getString("load-state");
-        PROGRESS_BEGIN_MESSAGE("Loading state from '" + f + "'");
+        long before = PROGRESS_BEGIN_TIME_MESSAGE("Loading state from '" + f + "'");
         MSStateHandler h(f, string2time(myOptions.getString("load-state.offset")));
         XMLSubSys::runParser(h, f);
         if (myOptions.isDefault("begin")) {
@@ -217,7 +246,7 @@ NLBuilder::build() {
 
 
 MSNet*
-NLBuilder::init() {
+NLBuilder::init(const bool isLibsumo) {
     OptionsCont& oc = OptionsCont::getOptions();
     oc.clear();
     MSFrame::fillOptions();
@@ -230,6 +259,12 @@ NLBuilder::init() {
     if (!MSFrame::checkOptions()) {
         throw ProcessError();
     }
+#ifdef HAVE_FOX
+    if (oc.getInt("threads") > 1) {
+        // make the output aware of threading
+        MsgHandler::setFactory(&MsgHandlerSynchronized::create);
+    }
+#endif
     MsgHandler::initOutputOptions();
     initRandomness();
     MSFrame::setMSGlobals(oc);
@@ -242,6 +277,9 @@ NLBuilder::init() {
     MSNet* net = new MSNet(vc, new MSEventControl(), new MSEventControl(), new MSEventControl());
     // need to init TraCI-Server before loading routes to catch VEHICLE_STATE_BUILT
     TraCIServer::openSocket(std::map<int, TraCIServer::CmdExecutor>());
+    if (isLibsumo) {
+        libsumo::Helper::registerVehicleStateListener();
+    }
 
     NLEdgeControlBuilder eb;
     NLDetectorBuilder db(*net);
@@ -267,6 +305,7 @@ NLBuilder::initRandomness() {
     RandHelper::initRandGlobal();
     RandHelper::initRandGlobal(MSRouteHandler::getParsingRNG());
     RandHelper::initRandGlobal(MSDevice::getEquipmentRNG());
+    RandHelper::initRandGlobal(OUProcess::getRNG());
     MSLane::initRNGs(OptionsCont::getOptions());
 }
 
@@ -318,7 +357,6 @@ NLBuilder::buildNet() {
     myNet.closeBuilding(myOptions, edges, junctions, routeLoaders, tlc, stateDumpTimes, stateDumpFiles,
                         myXMLHandler.haveSeenInternalEdge(),
                         myXMLHandler.haveSeenNeighs(),
-                        myXMLHandler.lefthand(),
                         myXMLHandler.networkVersion());
 }
 
@@ -330,8 +368,7 @@ NLBuilder::load(const std::string& mmlWhat, const bool isNet) {
     }
     std::vector<std::string> files = myOptions.getStringVector(mmlWhat);
     for (std::vector<std::string>::const_iterator fileIt = files.begin(); fileIt != files.end(); ++fileIt) {
-        PROGRESS_BEGIN_MESSAGE("Loading " + mmlWhat + " from '" + *fileIt + "'");
-        long before = SysUtils::getCurrentMillis();
+        const long before = PROGRESS_BEGIN_TIME_MESSAGE("Loading " + mmlWhat + " from '" + *fileIt + "'");
         if (!XMLSubSys::runParser(myXMLHandler, *fileIt, isNet)) {
             WRITE_MESSAGE("Loading of " + mmlWhat + " failed.");
             return false;

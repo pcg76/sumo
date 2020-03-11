@@ -1,28 +1,26 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2019 German Aerospace Center (DLR) and others.
-// This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v2.0
-// which accompanies this distribution, and is available at
-// http://www.eclipse.org/legal/epl-v20.html
-// SPDX-License-Identifier: EPL-2.0
+// Copyright (C) 2001-2020 German Aerospace Center (DLR) and others.
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0/
+// This Source Code may also be made available under the following Secondary
+// Licenses when the conditions for such availability set forth in the Eclipse
+// Public License 2.0 are satisfied: GNU General Public License, version 2
+// or later which is available at
+// https://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html
+// SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later
 /****************************************************************************/
 /// @file    GNEFrameModuls.h
 /// @author  Pablo Alvarez Lopez
 /// @date    Aug 2019
-/// @version $Id$
 ///
 // Auxiliar class for GNEFrame Moduls
 /****************************************************************************/
-#ifndef GNEFrameModuls_h
-#define GNEFrameModuls_h
-
-// ===========================================================================
-// included modules
-// ===========================================================================
+#pragma once
 #include <config.h>
 
-#include <netedit/GNEAttributeCarrier.h>
+#include <netedit/elements/GNEAttributeCarrier.h>
 #include <netedit/GNEViewNetHelper.h>
 
 // ===========================================================================
@@ -48,7 +46,7 @@ public:
 
     public:
         /// @brief constructor
-        TagSelector(GNEFrame* frameParent, GNEAttributeCarrier::TagType type, bool onlyDrawables = true);
+        TagSelector(GNEFrame* frameParent, GNETagProperties::TagType type, bool onlyDrawables = true);
 
         /// @brief destructor
         ~TagSelector();
@@ -60,10 +58,10 @@ public:
         void hideTagSelector();
 
         /// @brief get current type tag
-        const GNEAttributeCarrier::TagProperties& getCurrentTagProperties() const;
+        const GNETagProperties& getCurrentTagProperties() const;
 
         /// @brief set current type manually
-        void setCurrentTagType(GNEAttributeCarrier::TagType tagType);
+        void setCurrentTagType(GNETagProperties::TagType tagType);
 
         /// @brief set current type manually
         void setCurrentTag(SumoXMLTag newTag);
@@ -81,7 +79,7 @@ public:
         /// @}
 
     protected:
-		FOX_CONSTRUCTOR(TagSelector)
+        FOX_CONSTRUCTOR(TagSelector)
 
     private:
         /// @brief pointer to Frame Parent
@@ -94,16 +92,16 @@ public:
         FXComboBox* myTagsMatchBox;
 
         /// @brief current tag properties
-        GNEAttributeCarrier::TagProperties myCurrentTagProperties;
+        GNETagProperties myCurrentTagProperties;
 
         /// @brief list of tags types that will be shown in Match Box
-        std::vector<std::pair<std::string, GNEAttributeCarrier::TagType> > myListOfTagTypes;
+        std::vector<std::pair<std::string, GNETagProperties::TagType> > myListOfTagTypes;
 
         /// @brief list of tags that will be shown in Match Box
         std::vector<SumoXMLTag> myListOfTags;
 
         /// @brief dummy tag properties used if user select an invalid tag
-        GNEAttributeCarrier::TagProperties myInvalidTagProperty;
+        GNETagProperties myInvalidTagProperty;
     };
 
     // ===========================================================================
@@ -119,7 +117,7 @@ public:
         DemandElementSelector(GNEFrame* frameParent, SumoXMLTag demandElementTag);
 
         /// @brief constructor with tag type
-        DemandElementSelector(GNEFrame* frameParent, const std::vector<GNEAttributeCarrier::TagType>& tagTypes);
+        DemandElementSelector(GNEFrame* frameParent, const std::vector<GNETagProperties::TagType>& tagTypes);
 
         /// @brief destructor
         ~DemandElementSelector();
@@ -152,7 +150,7 @@ public:
         /// @}
 
     protected:
-		FOX_CONSTRUCTOR(DemandElementSelector)
+        FOX_CONSTRUCTOR(DemandElementSelector)
 
     private:
         /// @brief pointer to frame Parent
@@ -247,7 +245,7 @@ public:
         /// @}
 
     protected:
-		FOX_CONSTRUCTOR(EdgePathCreator)
+        FOX_CONSTRUCTOR(EdgePathCreator)
 
     private:
         /// @brief pointer to GNEFrame Parent
@@ -305,6 +303,9 @@ public:
         /// @brief refresh AttributeCarrierHierarchy
         void refreshAttributeCarrierHierarchy();
 
+        /// @brief if given AttributeCarrier is the same of myAC, disable it
+        void removeCurrentEditedAttribute(const GNEAttributeCarrier* AC);
+
         /// @name FOX-callbacks
         /// @{
         /// @brief called when user press right click over an item of list of children
@@ -327,7 +328,7 @@ public:
         /// @}
 
     protected:
-		FOX_CONSTRUCTOR(AttributeCarrierHierarchy)
+        FOX_CONSTRUCTOR(AttributeCarrierHierarchy)
 
         // @brief create pop-up menu in the positions X-Y for the clicked attribute carrier
         void createPopUpMenu(int X, int Y, GNEAttributeCarrier* clickedAC);
@@ -376,6 +377,15 @@ public:
 
         /// @brief demand element (casted from myClickedAC)
         GNEDemandElement* myClickedDemandElement;
+
+        /// @brief data set element (casted from myClickedAC)
+        GNEDataSet* myClickedDataSet;
+
+        /// @brief data interval element (casted from myClickedAC)
+        GNEDataInterval* myClickedDataInterval;
+
+        /// @brief generic data element (casted from myClickedAC)
+        GNEGenericData* myClickedGenericData;
 
         /// @brief tree list to show the children of the element to erase
         FXTreeList* myTreelist;
@@ -448,7 +458,7 @@ public:
         /// @}
 
     protected:
-		FOX_CONSTRUCTOR(DrawingShape)
+        FOX_CONSTRUCTOR(DrawingShape)
 
     private:
         /// @brief pointer to frame parent
@@ -485,7 +495,7 @@ public:
         /// @brief destructor
         ~SelectorParent();
 
-        /// @brief get currently additional parent selected
+        /// @brief get currently parent additional selected
         std::string getIdSelected() const;
 
         /// @brief select manually a element of the list
@@ -504,7 +514,7 @@ public:
         /// @brief pointer to Frame Parent
         GNEFrame* myFrameParent;
 
-        /// @brief current additional parent tag
+        /// @brief current parent additional tag
         SumoXMLTag myParentTag;
 
         /// @brief Label with parent name
@@ -610,9 +620,7 @@ public:
         /// @brief saved clicked position
         Position mySavedClickedPosition;
     };
+
+    /// @brief build rainbow in frame modul
+    static std::vector<RGBColor> buildRainbow(FXComposite* parent);
 };
-
-
-#endif
-
-/****************************************************************************/

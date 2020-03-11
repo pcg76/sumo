@@ -1,17 +1,20 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2019 German Aerospace Center (DLR) and others.
-// This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v2.0
-// which accompanies this distribution, and is available at
-// http://www.eclipse.org/legal/epl-v20.html
-// SPDX-License-Identifier: EPL-2.0
+// Copyright (C) 2001-2020 German Aerospace Center (DLR) and others.
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0/
+// This Source Code may also be made available under the following Secondary
+// Licenses when the conditions for such availability set forth in the Eclipse
+// Public License 2.0 are satisfied: GNU General Public License, version 2
+// or later which is available at
+// https://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html
+// SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later
 /****************************************************************************/
 /// @file    NBPTLine.cpp
 /// @author  Gregor Laemmel
 /// @author  Nikita Cherednychek
 /// @date    Tue, 20 Mar 2017
-/// @version $Id$
 ///
 // The representation of one direction of a single pt line
 /****************************************************************************/
@@ -26,7 +29,7 @@
 #include "NBPTStop.h"
 
 NBPTLine::NBPTLine(const std::string& id, const std::string& name, const std::string& type, const std::string& ref, int interval, const std::string& nightService,
-        SUMOVehicleClass vClass) :
+                   SUMOVehicleClass vClass) :
     myName(name),
     myType(type),
     myPTLineId(id),
@@ -107,12 +110,12 @@ std::vector<long long int>* NBPTLine::getWaysNodes(std::string wayId) {
     return nullptr;
 }
 
-void 
+void
 NBPTLine::setEdges(const std::vector<NBEdge*>& edges) {
     myRoute = edges;
     // ensure permissions
-    for (NBEdge* e: edges) {
-        SVCPermissions permissions = e->getPermissions(); 
+    for (NBEdge* e : edges) {
+        SVCPermissions permissions = e->getPermissions();
         if ((permissions & myVClass) != myVClass) {
             SVCPermissions nVuln = ~(SVC_PEDESTRIAN | SVC_BICYCLE);
             if (permissions != 0 && (permissions & nVuln) == 0) {
@@ -138,7 +141,7 @@ const std::vector<NBEdge*>& NBPTLine::getRoute() const {
     return myRoute;
 }
 
-std::vector<NBEdge*> 
+std::vector<NBEdge*>
 NBPTLine::getStopEdges(const NBEdgeCont& ec) const {
     std::vector<NBEdge*> result;
     for (NBPTStop* stop : myPTStops) {
@@ -150,7 +153,7 @@ NBPTLine::getStopEdges(const NBEdgeCont& ec) const {
     return result;
 }
 
-NBEdge* 
+NBEdge*
 NBPTLine::getRouteStart(const NBEdgeCont& ec) const {
     std::vector<NBEdge*> validEdges;
     // filter out edges that have been removed due to joining junctions
@@ -179,7 +182,7 @@ NBPTLine::getRouteStart(const NBEdgeCont& ec) const {
     return validEdges.front();
 }
 
-NBEdge* 
+NBEdge*
 NBPTLine::getRouteEnd(const NBEdgeCont& ec) const {
     std::vector<NBEdge*> validEdges;
     // filter out edges that have been removed due to joining junctions

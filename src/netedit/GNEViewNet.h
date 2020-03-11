@@ -1,26 +1,23 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2019 German Aerospace Center (DLR) and others.
-// This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v2.0
-// which accompanies this distribution, and is available at
-// http://www.eclipse.org/legal/epl-v20.html
-// SPDX-License-Identifier: EPL-2.0
+// Copyright (C) 2001-2020 German Aerospace Center (DLR) and others.
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0/
+// This Source Code may also be made available under the following Secondary
+// Licenses when the conditions for such availability set forth in the Eclipse
+// Public License 2.0 are satisfied: GNU General Public License, version 2
+// or later which is available at
+// https://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html
+// SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later
 /****************************************************************************/
 /// @file    GNEViewNet.h
 /// @author  Jakob Erdmann
 /// @date    Feb 2011
-/// @version $Id$
 ///
 // A view on the network being edited (adapted from GUIViewTraffic)
 /****************************************************************************/
-#ifndef GNEViewNet_h
-#define GNEViewNet_h
-
-
-// ===========================================================================
-// included modules
-// ===========================================================================
+#pragma once
 #include "GNEViewNetHelper.h"
 
 #include <utils/common/SUMOVehicleClass.h>
@@ -98,7 +95,7 @@ public:
 
     /// @brief get edit modes
     const GNEViewNetHelper::EditModes& getEditModes() const;
-    
+
     /// @brief get testing mode
     const GNEViewNetHelper::TestingMode& getTestingMode() const;
 
@@ -110,6 +107,9 @@ public:
 
     /// @brief get demand view options
     const GNEViewNetHelper::DemandViewOptions& getDemandViewOptions() const;
+
+    /// @brief get data view options
+    const GNEViewNetHelper::DataViewOptions& getDataViewOptions() const;
 
     /// @brief get Key Pressed modul
     const GNEViewNetHelper::KeyPressed& getKeyPressed() const;
@@ -202,6 +202,9 @@ public:
     /// @brief Transform POI to POILane, and viceversa
     long onCmdTransformPOI(FXObject*, FXSelector, void*);
 
+    /// @brief limit interval
+    long onCmdLimitInterval(FXObject*, FXSelector, void*);
+
     /// @brief duplicate selected lane
     long onCmdDuplicateLane(FXObject*, FXSelector, void*);
 
@@ -264,6 +267,9 @@ public:
     /// @brief toogle show grid
     long onCmdToogleShowGrid(FXObject*, FXSelector, void*);
 
+    /// @brief toogle draw vehicles in begin position or spread in lane
+    long onCmdToogleDrawSpreadVehicles(FXObject*, FXSelector, void*);
+
     /// @brief toogle warn for merge
     long onCmdToogleWarnAboutMerge(FXObject*, FXSelector, void*);
 
@@ -322,11 +328,14 @@ public:
     /// @brief get the undoList object
     GNEUndoList* getUndoList() const;
 
+    /// @brief get interval bar
+    GNEViewNetHelper::IntervalBar& getIntervalBar();
+
     /// @brief get AttributeCarrier under cursor
     const GNEAttributeCarrier* getDottedAC() const;
 
     /// @brief set attributeCarrier under cursor
-    void setDottedAC(const GNEAttributeCarrier* AC);
+    void setDottedAC(GNEAttributeCarrier* AC);
 
     /// @brief check if lock icon should be visible
     bool showLockIcon() const;
@@ -378,6 +387,9 @@ private:
 
     /// @brief variable use to save all pointers to objects under cursor after a click
     GNEViewNetHelper::ObjectsUnderCursor myObjectsUnderCursor;
+
+    /// @brief variable use to save all pointers to objects under cursor after a click with grid enabled
+    GNEViewNetHelper::ObjectsUnderCursor myObjectsUnderGrippedCursor;
     /// @}
 
     /// @name structs related with checkable buttons
@@ -391,6 +403,9 @@ private:
 
     /// @brief variable used to save checkable buttons for Supermode Demand
     GNEViewNetHelper::DemandCheckableButtons myDemandCheckableButtons;
+
+    /// @brief variable used to save checkable buttons for Supermode Data
+    GNEViewNetHelper::DataCheckableButtons myDataCheckableButtons;
     /// @}
 
     /// @name structs related with view options
@@ -399,12 +414,18 @@ private:
     /// @brief variable used to save variables related with common view options
     GNEViewNetHelper::CommonViewOptions myCommonViewOptions;
 
-    /// @brief variable used to save variables related with view options in Network Supermode
+    /// @brief variable used to save variables related with view options in supermode Network
     GNEViewNetHelper::NetworkViewOptions myNetworkViewOptions;
 
-    /// @brief variable used to save variables related with view options in Demand Supermode
+    /// @brief variable used to save variables related with view options in supermode Demand
     GNEViewNetHelper::DemandViewOptions myDemandViewOptions;
+
+    /// @brief variable used to save variables related with view options in supermode Data
+    GNEViewNetHelper::DataViewOptions myDataViewOptions;
     /// @}
+
+    /// @brief variable used to save IntervalBar
+    GNEViewNetHelper::IntervalBar myIntervalBar;
 
     /// @name structs related with move elements
     /// @{
@@ -424,6 +445,9 @@ private:
     /// @brief variable used to save variables related with vehicle type options
     GNEViewNetHelper::VehicleTypeOptions myVehicleTypeOptions;
     // @}
+
+    /// @brief variable used to save elements
+    GNEViewNetHelper::SaveElements mySaveElements;
 
     /// @brief variable used to save variables related with selecting areas
     GNEViewNetHelper::SelectingArea mySelectingArea;
@@ -446,7 +470,7 @@ private:
     /**@brief current AttributeCarrier that is drawn using with a dotted contour
      * note: it's constant because is edited from constant functions (example: drawGL(...) const)
      */
-    const GNEAttributeCarrier* myDottedAC;
+    GNEAttributeCarrier* myDottedAC;
 
     /// @brief create edit mode buttons and elements
     void buildEditModeControls();
@@ -456,6 +480,9 @@ private:
 
     /// @brief updates Demand mode specific controls
     void updateDemandModeSpecificControls();
+
+    /// @brief updates Data mode specific controls
+    void updateDataModeSpecificControls();
 
     /// @brief delete all currently selected junctions
     void deleteSelectedJunctions();
@@ -471,6 +498,9 @@ private:
 
     /// @brief delete all currently selected demand elements
     void deleteSelectedDemandElements();
+
+    /// @brief delete all currently selected data elements
+    void deleteSelectedDataElements();
 
     /// @brief delete all currently selected crossings
     void deleteSelectedCrossings();
@@ -554,14 +584,18 @@ private:
     /// @brief process move mouse function in Supermode Demand
     void processMoveMouseDemand();
 
+    /// @brief process left button press function in Supermode Data
+    void processLeftButtonPressData(void* eventData);
+
+    /// @brief process left button release function in Supermode Data
+    void processLeftButtonReleaseData();
+
+    /// @brief process move mouse function in Supermode Data
+    void processMoveMouseData();
+
     /// @brief Invalidated copy constructor.
     GNEViewNet(const GNEViewNet&) = delete;
 
     /// @brief Invalidated assignment operator.
     GNEViewNet& operator=(const GNEViewNet&) = delete;
 };
-
-
-#endif
-
-/****************************************************************************/

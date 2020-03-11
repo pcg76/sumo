@@ -1,11 +1,15 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2013-2019 German Aerospace Center (DLR) and others.
-// This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v2.0
-// which accompanies this distribution, and is available at
-// http://www.eclipse.org/legal/epl-v20.html
-// SPDX-License-Identifier: EPL-2.0
+// Copyright (C) 2013-2020 German Aerospace Center (DLR) and others.
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0/
+// This Source Code may also be made available under the following Secondary
+// Licenses when the conditions for such availability set forth in the Eclipse
+// Public License 2.0 are satisfied: GNU General Public License, version 2
+// or later which is available at
+// https://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html
+// SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later
 /****************************************************************************/
 /// @file    MSDevice_ToC.cpp
 /// @author  Leonhard Luecken
@@ -13,15 +17,10 @@
 /// @author  Michael Behrisch
 /// @author  Jakob Erdmann
 /// @date    01.04.2018
-/// @version $Id$
 ///
 // The ToC Device controls the transition of control between automated and manual driving.
 //
 /****************************************************************************/
-
-// ===========================================================================
-// included modules
-// ===========================================================================
 #include <config.h>
 
 #include <algorithm>
@@ -37,6 +36,7 @@
 #include <microsim/MSVehicleControl.h>
 #include <microsim/MSEventControl.h>
 #include <microsim/MSDriverState.h>
+#include <microsim/MSStoppingPlace.h>
 #include "MSDevice_ToC.h"
 
 
@@ -224,8 +224,8 @@ MSDevice_ToC::getOpenGapParams(const SUMOVehicle& v, const OptionsCont& oc) {
     double spacing = getFloatParam(v, oc, "toc.ogNewSpaceHeadway", -1.0, false);
     double changeRate = getFloatParam(v, oc, "toc.ogChangeRate", -1.0, false);
     double maxDecel = getFloatParam(v, oc, "toc.ogMaxDecel", -1.0, false);
-
     bool specifiedAny = false;
+
     if (changeRate == -1.0) {
         changeRate = DEFAULT_OPENGAP_CHANGERATE;
     } else {
@@ -237,7 +237,7 @@ MSDevice_ToC::getOpenGapParams(const SUMOVehicle& v, const OptionsCont& oc) {
         specifiedAny = true;
     }
     if (specifiedAny && timegap == -1 && spacing == -1) {
-        WRITE_ERROR("If any openGap parameters for the ToC model are specified, then at least one of ogTimeGap and ogSpacing must be defined.")
+        WRITE_ERROR("If any openGap parameters for the ToC model are specified, then at least one of toc.ogNewTimeHeadway and toc.ogNewSpaceHeadway must be defined.")
     }
     if (timegap == -1) {
         timegap = DEFAULT_OPENGAP_TIMEGAP;
@@ -249,8 +249,6 @@ MSDevice_ToC::getOpenGapParams(const SUMOVehicle& v, const OptionsCont& oc) {
     } else {
         specifiedAny = true;
     }
-
-
 #ifdef DEBUG_TOC
     std::cout << "Parsed openGapParams: \n"
               << "  timegap=" << timegap
@@ -259,7 +257,6 @@ MSDevice_ToC::getOpenGapParams(const SUMOVehicle& v, const OptionsCont& oc) {
               << ", maxDecel=" << maxDecel
               << std::endl;
 #endif
-
     return OpenGapParams(timegap, spacing, changeRate, maxDecel, specifiedAny);
 }
 
@@ -288,7 +285,8 @@ MSDevice_ToC::MSDevice_ToC(SUMOVehicle& holder, const std::string& id, const std
     myPrepareToCCommand(nullptr),
     myOutputFile(nullptr),
     myEvents(),
-	myEventLanes(),
+    myEventLanes(),
+    myEventXY(),
     myPreviousLCMode(-1),
     myOpenGapParams(ogp),
     myDynamicToCThreshold(dynamicToCThreshold),
@@ -541,7 +539,8 @@ MSDevice_ToC::requestToC(SUMOTime timeTillMRM, SUMOTime responseTime) {
         // Record event
         if (generatesOutput()) {
             myEvents.push(std::make_pair(SIMSTEP, "TOR"));
-			myEventLanes.push(std::make_pair(myHolder.getLane()->getID(), myHolder.getPositionOnLane())); // add lane and lanepos
+            myEventLanes.push(std::make_pair(myHolder.getLane()->getID(), myHolder.getPositionOnLane())); // add lane and lanepos
+            myEventXY.push(std::make_pair(myHolder.getPosition().x(), myHolder.getPosition().y()));       // add (x, y) position
         }
     } else {
         // Switch to automated mode is performed immediately
@@ -595,7 +594,8 @@ MSDevice_ToC::triggerMRM(SUMOTime /* t */) {
     // Record event
     if (generatesOutput()) {
         myEvents.push(std::make_pair(SIMSTEP, "MRM"));
-		myEventLanes.push(std::make_pair(myHolder.getLane()->getID(), myHolder.getPositionOnLane())); // add lane and lanepos
+        myEventLanes.push(std::make_pair(myHolder.getLane()->getID(), myHolder.getPositionOnLane())); // add lane and lanepos
+        myEventXY.push(std::make_pair(myHolder.getPosition().x(), myHolder.getPosition().y()));       // add (x, y) position
     }
 
     return 0;
@@ -624,7 +624,8 @@ MSDevice_ToC::triggerUpwardToC(SUMOTime /* t */) {
     // Record event
     if (generatesOutput()) {
         myEvents.push(std::make_pair(SIMSTEP, "ToCup"));
-		myEventLanes.push(std::make_pair(myHolder.getLane()->getID(), myHolder.getPositionOnLane())); // add lane and lanepos
+        myEventLanes.push(std::make_pair(myHolder.getLane()->getID(), myHolder.getPositionOnLane())); // add lane and lanepos
+        myEventXY.push(std::make_pair(myHolder.getPosition().x(), myHolder.getPosition().y()));       // add (x, y) position
     }
 
     return 0;
@@ -660,7 +661,8 @@ MSDevice_ToC::triggerDownwardToC(SUMOTime /* t */) {
     // Record event
     if (generatesOutput()) {
         myEvents.push(std::make_pair(SIMSTEP, "ToCdown"));
-		myEventLanes.push(std::make_pair(myHolder.getLane()->getID(), myHolder.getPositionOnLane())); // add lane and lanepos
+        myEventLanes.push(std::make_pair(myHolder.getLane()->getID(), myHolder.getPositionOnLane())); // add lane and lanepos
+        myEventXY.push(std::make_pair(myHolder.getPosition().x(), myHolder.getPosition().y()));       // add (x, y) position
     }
     return 0;
 }
@@ -815,7 +817,8 @@ MSDevice_ToC::notifyMove(SUMOTrafficObject& /*veh*/,
         // Record event
         if (generatesOutput()) {
             myEvents.push(std::make_pair(SIMSTEP, "DYNTOR"));
-			myEventLanes.push(std::make_pair(myHolder.getLane()->getID(), myHolder.getPositionOnLane())); // add lane and lanepos
+            myEventLanes.push(std::make_pair(myHolder.getLane()->getID(), myHolder.getPositionOnLane())); // add lane and lanepos
+            myEventXY.push(std::make_pair(myHolder.getPosition().x(), myHolder.getPosition().y()));       // add (x, y) position
         }
         // Leadtime for dynamic ToC is proportional to the time assumed for the dynamic ToC threshold
         const double leadTime = myDynamicToCThreshold * 1000 * DYNAMIC_TOC_LEADTIME_FACTOR;
@@ -827,8 +830,9 @@ MSDevice_ToC::notifyMove(SUMOTrafficObject& /*veh*/,
         // Abort dynamic ToC, FIXME: This could abort an externally requested ToC in rare occasions... (needs test)
         // Record event
         if (generatesOutput()) {
-            myEvents.push(std::make_pair(SIMSTEP, "~DYNTOR"));
-			myEventLanes.push(std::make_pair(myHolder.getLane()->getID(), myHolder.getPositionOnLane())); // add lane and lanepos
+            myEvents.push(std::make_pair(SIMSTEP, "DYNTOR"));
+            myEventLanes.push(std::make_pair(myHolder.getLane()->getID(), myHolder.getPositionOnLane())); // add lane and lanepos
+            myEventXY.push(std::make_pair(myHolder.getPosition().x(), myHolder.getPosition().y()));       // add (x, y) position
         }
         // NOTE: This should not occur if lane changing is prevented during ToC preparation...
         // TODO: Reset response time to the original value (unnecessary if re-sampling for each call to requestToC)
@@ -873,6 +877,14 @@ MSDevice_ToC::getParameter(const std::string& key) const {
         return toString(STEPS2TIME(myMRMSafeSpotDuration));
     } else if (key == "maxPreparationAccel") {
         return toString(myMaxPreparationAccel);
+    } else if (key == "ogNewTimeHeadway") {
+        return toString(myOpenGapParams.newTimeHeadway);
+    } else if (key == "ogNewSpaceHeadway") {
+        return toString(myOpenGapParams.newSpaceHeadway);
+    } else if (key == "ogChangeRate") {
+        return toString(myOpenGapParams.changeRate);
+    } else if (key == "ogMaxDecel") {
+        return toString(myOpenGapParams.maxDecel);
     }
     throw InvalidArgument("Parameter '" + key + "' is not supported for device of type '" + deviceName() + "'");
 }
@@ -1012,13 +1024,25 @@ MSDevice_ToC::writeOutput() {
     }
     while (!myEvents.empty()) {
         std::pair<SUMOTime, std::string>& e = myEvents.front();
-		std::pair<std::string, double>& l = myEventLanes.front();
+        std::pair<std::string, double>& l = myEventLanes.front();
+        std::pair<double, double>& p = myEventXY.front();
         myOutputFile->openTag(e.second);
         myOutputFile->writeAttr("id", myHolder.getID()).writeAttr("t", STEPS2TIME(e.first));
-		myOutputFile->writeAttr("lane", l.first).writeAttr("lanePos", STEPS2TIME(l.second));
+        myOutputFile->writeAttr("lane", l.first).writeAttr("lanePos", l.second);
+        myOutputFile->writeAttr("x", p.first).writeAttr("y", p.second);
         myOutputFile->closeTag();
         myEvents.pop();
-		myEventLanes.pop();
+        myEventLanes.pop();
+        myEventXY.pop();
+
+        if (e.second.compare("DYNTOR") == 0 && !myEvents.empty()) { // skip "TOR" events if duplicate of "DYNTOR"
+            std::pair<SUMOTime, std::string>& eNext = myEvents.front();
+            if (eNext.second.compare("TOR") == 0 && eNext.first == e.first) {
+                myEvents.pop();
+                myEventLanes.pop();
+                myEventXY.pop();
+            }
+        }
     }
 }
 
@@ -1265,4 +1289,3 @@ std::vector<std::vector<double> > MSDevice_ToC::lookupResponseTimeVariances = {
 
 
 /****************************************************************************/
-

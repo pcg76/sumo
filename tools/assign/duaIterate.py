@@ -1,12 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-# Copyright (C) 2008-2019 German Aerospace Center (DLR) and others.
-# This program and the accompanying materials
-# are made available under the terms of the Eclipse Public License v2.0
-# which accompanies this distribution, and is available at
-# http://www.eclipse.org/legal/epl-v20.html
-# SPDX-License-Identifier: EPL-2.0
+# Copyright (C) 2008-2020 German Aerospace Center (DLR) and others.
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License 2.0 which is available at
+# https://www.eclipse.org/legal/epl-2.0/
+# This Source Code may also be made available under the following Secondary
+# Licenses when the conditions for such availability set forth in the Eclipse
+# Public License 2.0 are satisfied: GNU General Public License, version 2
+# or later which is available at
+# https://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html
+# SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later
 
 # @file    duaIterate.py
 # @author  Daniel Krajzewicz
@@ -14,7 +18,6 @@
 # @author  Jakob Erdmann
 # @author  Yun-Pang Floetteroed
 # @date    2008-02-13
-# @version $Id$
 
 """
 Run duarouter and sumo alternating to perform a dynamic user assignment.
@@ -44,9 +47,9 @@ def addGenericOptions(argParser):
                            help="SUMO network (mandatory)", metavar="FILE")
     argParser.add_argument("-+", "--additional", default="", help="Additional files")
     argParser.add_argument("-b", "--begin",
-                           type=int, default=0, help="Set simulation/routing begin")
+                           type=float, default=0, help="Set simulation/routing begin")
     argParser.add_argument("-e", "--end",
-                           type=int, help="Set simulation/routing end")
+                           type=float, help="Set simulation/routing end")
     argParser.add_argument("-R", "--route-steps", type=int, default=200, help="Set simulation route steps")
     argParser.add_argument("-a", "--aggregation",
                            type=int, default=900, help="Set main weights aggregation period")
@@ -79,6 +82,8 @@ def addGenericOptions(argParser):
                            help="Delay before blocked vehicles are teleported (negative value disables teleporting)")
     argParser.add_argument("--time-to-teleport.highways", dest="timetoteleport_highways", type=float, default=0,
                            help="Delay before blocked vehicles are teleported on wrong highway lanes")
+    argParser.add_argument("--measure-vtypes", dest="measureVTypes",
+                           help="Restrict edgeData measurements to the given vehicle types")
     argParser.add_argument("-7", "--zip", action="store_true",
                            default=False, help="zip old iterations using 7zip")
 
@@ -162,8 +167,12 @@ def initOptions():
                            help="give traffic jams a higher weight when using option --weight-memory")
     argParser.add_argument("--clean-alt", action="store_true", dest="clean_alt",
                            default=False, help="Whether old rou.alt.xml files shall be removed")
-    argParser.add_argument("--binary", action="store_true",
-                           default=False, help="Use binary format for intermediate and resulting route files")
+    argParser.add_argument("--binary", dest="gzip", action="store_true", default=False,
+                           help="alias for --gzip")
+    argParser.add_argument("--gzip", action="store_true", default=False,
+                           help="writing intermediate and resulting route files in gzipped format")
+    argParser.add_argument("--dualog", default="dua.log", help="log file path (default 'dua.log')")
+    argParser.add_argument("--log", default="stdout.log", help="log file path (default 'dua.log')")
     argParser.add_argument("remaining_args", nargs='*')
     return argParser
 
@@ -348,14 +357,15 @@ def writeSUMOConf(sumoBinary, step, options, additional_args, route_files):
 
     # write detectorfile
     with open(detectorfile, 'w') as fd:
+        vTypes = ' vTypes="%s"' % ' '.join(options.measureVTypes.split(',')) if options.measureVTypes else ""
         suffix = "_%03i_%s" % (step, options.aggregation)
         print("<a>", file=fd)
-        print('    <edgeData id="dump%s" freq="%s" file="%s" excludeEmpty="true" minSamples="1"/>' % (
-            suffix, options.aggregation, get_dumpfilename(options, step, "dump")), file=fd)
+        print('    <edgeData id="dump%s" freq="%s" file="%s" excludeEmpty="true" minSamples="1"%s/>' % (
+            suffix, options.aggregation, get_dumpfilename(options, step, "dump"), vTypes), file=fd)
         if options.eco_measure:
             print(('    <edgeData id="eco%s" type="hbefa" freq="%s" file="dump%s.xml" ' +
-                   'excludeEmpty="true" minSamples="1"/>') %
-                  (suffix, options.aggregation, suffix), file=fd)
+                   'excludeEmpty="true" minSamples="1"%s/>') %
+                  (suffix, options.aggregation, suffix, vTypes), file=fd)
         print("</a>", file=fd)
 
 
@@ -474,8 +484,8 @@ def main(args=None):
     dua_args = assign_remaining_args(
         duaBinary, 'duarouter', options.remaining_args)
 
-    sys.stdout = sumolib.TeeFile(sys.stdout, open("stdout.log", "w+"))
-    log = open("dua.log", "w+")
+    sys.stdout = sumolib.TeeFile(sys.stdout, open(options.log, "w+"))
+    log = open(options.dualog, "w+")
     if options.zip:
         if options.clean_alt:
             sys.exit(
@@ -503,8 +513,8 @@ def main(args=None):
         costmemory = CostMemory('traveltime', pessimism=options.pessimism, network_file=options.net
                                 )
     routesSuffix = ".xml"
-    if options.binary:
-        routesSuffix = ".sbx"
+    if options.gzip:
+        routesSuffix = ".gz"
 
     if options.weightmemory and options.firstStep != 0:
         # load previous dump files when continuing a run

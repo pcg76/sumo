@@ -1,11 +1,15 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2019 German Aerospace Center (DLR) and others.
-// This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v2.0
-// which accompanies this distribution, and is available at
-// http://www.eclipse.org/legal/epl-v20.html
-// SPDX-License-Identifier: EPL-2.0
+// Copyright (C) 2001-2020 German Aerospace Center (DLR) and others.
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0/
+// This Source Code may also be made available under the following Secondary
+// Licenses when the conditions for such availability set forth in the Eclipse
+// Public License 2.0 are satisfied: GNU General Public License, version 2
+// or later which is available at
+// https://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html
+// SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later
 /****************************************************************************/
 /// @file    GUISUMOAbstractView.cpp
 /// @author  Daniel Krajzewicz
@@ -14,15 +18,9 @@
 /// @author  Laura Bieker
 /// @author  Andreas Gaubatz
 /// @date    Sept 2002
-/// @version $Id$
 ///
 // The base class for a view
 /****************************************************************************/
-
-
-// ===========================================================================
-// included modules
-// ===========================================================================
 #include <config.h>
 
 #include <iostream>
@@ -233,12 +231,6 @@ GUISUMOAbstractView::addDecals(const std::vector<Decal>& decals) {
 }
 
 
-GUIVisualizationSettings*
-GUISUMOAbstractView::getVisualisationSettings() {
-    return myVisualizationSettings;
-}
-
-
 void
 GUISUMOAbstractView::updatePositionInformation() const {
     Position pos = getPositionInformation();
@@ -333,9 +325,18 @@ GUISUMOAbstractView::getObjectUnderCursor() {
 
 
 std::vector<GUIGlID>
-GUISUMOAbstractView::getObjectstUnderCursor() {
-
+GUISUMOAbstractView::getObjectsUnderCursor() {
     return getObjectsAtPosition(getPositionInformation(), SENSITIVITY);
+}
+
+
+std::vector<GUIGlObject*>
+GUISUMOAbstractView::getGUIGlObjectsUnderGrippedCursor() {
+    if (myVisualizationSettings->showGrid) {
+        return getGUIGlObjectsAtPosition(snapToActiveGrid(getPositionInformation()), SENSITIVITY);
+    } else {
+        return getGUIGlObjectsAtPosition(getPositionInformation(), SENSITIVITY);
+    }
 }
 
 
@@ -347,10 +348,11 @@ GUISUMOAbstractView::getGUIGlObjectsUnderCursor() {
 
 GUIGlID
 GUISUMOAbstractView::getObjectAtPosition(Position pos) {
-    Boundary selection;
-    selection.add(pos);
-    selection.grow(SENSITIVITY);
-    const std::vector<GUIGlID> ids = getObjectsInBoundary(selection);
+    // calculate a boundary for the given position
+    Boundary positionBoundary;
+    positionBoundary.add(pos);
+    positionBoundary.grow(SENSITIVITY);
+    const std::vector<GUIGlID> ids = getObjectsInBoundary(positionBoundary, true);
     // Interpret results
     int idMax = 0;
     double maxLayer = -std::numeric_limits<double>::max();
@@ -403,7 +405,7 @@ GUISUMOAbstractView::getObjectsAtPosition(Position pos, double radius) {
     selection.add(pos);
     selection.grow(radius);
     // obtain GUIGlID of objects in boundary
-    const std::vector<GUIGlID> ids = getObjectsInBoundary(selection);
+    const std::vector<GUIGlID> ids = getObjectsInBoundary(selection, true);
     // iterate over obtained GUIGlIDs
     for (const auto& i : ids) {
         // obtain GUIGlObject
@@ -438,7 +440,7 @@ GUISUMOAbstractView::getGUIGlObjectsAtPosition(Position pos, double radius) {
     selection.add(pos);
     selection.grow(radius);
     // obtain GUIGlID of objects in boundary
-    const std::vector<GUIGlID> ids = getObjectsInBoundary(selection);
+    const std::vector<GUIGlID> ids = getObjectsInBoundary(selection, true);
     // iterate over obtained GUIGlIDs
     for (const auto& i : ids) {
         // obtain GUIGlObject
@@ -460,7 +462,7 @@ GUISUMOAbstractView::getGUIGlObjectsAtPosition(Position pos, double radius) {
 
 
 std::vector<GUIGlID>
-GUISUMOAbstractView::getObjectsInBoundary(Boundary bound) {
+GUISUMOAbstractView::getObjectsInBoundary(Boundary bound, bool singlePosition) {
     const int NB_HITS_MAX = 1024 * 1024;
     // Prepare the selection mode
     static GUIGlID hits[NB_HITS_MAX];
@@ -472,11 +474,19 @@ GUISUMOAbstractView::getObjectsInBoundary(Boundary bound) {
     Boundary oldViewPort = myChanger->getViewport(false); // backup the actual viewPort
     myChanger->setViewport(bound);
     bound = applyGLTransform(false);
-
-    // paint in select mode
-    myVisualizationSettings->drawForSelecting = true;
+    // enable draw for selecting (to draw objects with less details)
+    if (singlePosition) {
+        myVisualizationSettings->drawForPositionSelection = true;
+    } else {
+        myVisualizationSettings->drawForRectangleSelection = true;
+    }
     int hits2 = doPaintGL(GL_SELECT, bound);
-    myVisualizationSettings->drawForSelecting = false;
+    // disable draw for selecting (to draw objects with less details)
+    if (singlePosition) {
+        myVisualizationSettings->drawForPositionSelection = false;
+    } else {
+        myVisualizationSettings->drawForRectangleSelection = false;
+    }
     // Get the results
     nb_hits = glRenderMode(GL_RENDER);
     if (nb_hits == -1) {
@@ -700,7 +710,7 @@ GUISUMOAbstractView::displayColorLegend() {
 
         const double threshold = scheme.getThresholds()[i];
         std::string name = scheme.getNames()[i];
-        std::string text = fixed ? name : toString(threshold);
+        std::string text = fixed || threshold == GUIVisualizationSettings::MISSING_DATA ? name : toString(threshold);
 
         const double bgShift = 0.0;
         const double textShift = 0.02;
@@ -880,7 +890,7 @@ GUISUMOAbstractView::onLeftBtnPress(FXObject*, FXSelector, void* data) {
     FXEvent* e = (FXEvent*) data;
     // check whether the selection-mode is activated
     if ((e->state & CONTROLMASK) != 0) {
-        // try to get the object-id if so
+        // toggle selection of object under cursor
         if (makeCurrent()) {
             int id = getObjectUnderCursor();
             if (id != 0) {
@@ -892,6 +902,24 @@ GUISUMOAbstractView::onLeftBtnPress(FXObject*, FXSelector, void* data) {
                 //  so we should update the screen again...
                 update();
             }
+        }
+    }
+    if ((e->state & SHIFTMASK) != 0) {
+        // track vehicle or person under cursor
+        if (makeCurrent()) {
+            int id = getObjectUnderCursor();
+            if (id != 0) {
+                GUIGlObject* o = GUIGlObjectStorage::gIDStorage.getObjectBlocking(id);
+                if (o != nullptr) {
+                    if (o->getType() == GLO_VEHICLE || o->getType() == GLO_PERSON) {
+                        startTrack(id);
+                    } else if (o->getType() == GLO_REROUTER_EDGE) {
+                        o->onLeftBtnPress(data);
+                        update();
+                    }
+                }
+            }
+            makeNonCurrent();
         }
     }
     myChanger->onLeftBtnPress(data);
@@ -1040,6 +1068,20 @@ GUISUMOAbstractView::onKeyPress(FXObject* o, FXSelector sel, void* data) {
     if (myPopup != nullptr) {
         return myPopup->onKeyPress(o, sel, data);
     } else {
+        FXEvent* e = (FXEvent*) data;
+        if (e->state & CONTROLMASK) {
+            if (e->code == FX::KEY_Page_Up) {
+                myVisualizationSettings->gridXSize *= 2;
+                myVisualizationSettings->gridYSize *= 2;
+                update();
+                return 1;
+            } else if (e->code == FX::KEY_Page_Down) {
+                myVisualizationSettings->gridXSize /= 2;
+                myVisualizationSettings->gridYSize /= 2;
+                update();
+                return 1;
+            }
+        }
         FXGLCanvas::onKeyPress(o, sel, data);
         return myChanger->onKeyPress(data);
     }
@@ -1356,9 +1398,9 @@ GUISUMOAbstractView::setColorScheme(const std::string&) {
 }
 
 
-GUIVisualizationSettings*
+GUIVisualizationSettings&
 GUISUMOAbstractView::getVisualisationSettings() const {
-    return myVisualizationSettings;
+    return *myVisualizationSettings;
 }
 
 
@@ -1476,7 +1518,6 @@ GUISUMOAbstractView::checkGDALImage(Decal& d) {
         } else if (poBand->GetColorInterpretation() == GCI_AlphaBand) {
             shift = 3;
         } else {
-            WRITE_MESSAGE("Unknown color band in " + d.filename + ", maybe fox can parse it.");
             valid = false;
             break;
         }

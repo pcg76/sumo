@@ -1,35 +1,37 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2019 German Aerospace Center (DLR) and others.
-// This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v2.0
-// which accompanies this distribution, and is available at
-// http://www.eclipse.org/legal/epl-v20.html
-// SPDX-License-Identifier: EPL-2.0
+// Copyright (C) 2001-2020 German Aerospace Center (DLR) and others.
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0/
+// This Source Code may also be made available under the following Secondary
+// Licenses when the conditions for such availability set forth in the Eclipse
+// Public License 2.0 are satisfied: GNU General Public License, version 2
+// or later which is available at
+// https://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html
+// SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later
 /****************************************************************************/
 /// @file    MSRailSignal.cpp
 /// @author  Melanie Weber
 /// @author  Andreas Kendziorra
 /// @date    Jan 2015
-/// @version $Id$
 ///
 // A rail signal logic
 /****************************************************************************/
-
-
-// ===========================================================================
-// included modules
-// ===========================================================================
 #include <config.h>
 
 #include <cassert>
 #include <utility>
 #include <vector>
 #include <bitset>
+#ifdef HAVE_FOX
+#include <utils/foxtools/FXWorkerThread.h>
+#endif
 #include <utils/iodevices/OutputDevice_COUT.h>
 #include <microsim/MSEventControl.h>
 #include <microsim/MSNet.h>
 #include <microsim/MSEdge.h>
+#include <microsim/MSEdgeControl.h>
 #include <microsim/MSLane.h>
 #include <microsim/MSLink.h>
 #include <microsim/MSJunctionLogic.h>
@@ -74,9 +76,9 @@ int MSRailSignal::myNumWarnings(0);
 // method definitions
 // ===========================================================================
 MSRailSignal::MSRailSignal(MSTLLogicControl& tlcontrol,
-                           const std::string& id, const std::string& programID,
+                           const std::string& id, const std::string& programID, SUMOTime delay,
                            const std::map<std::string, std::string>& parameters) :
-    MSTrafficLightLogic(tlcontrol, id, programID, TLTYPE_RAIL_SIGNAL, DELTA_T, parameters),
+    MSTrafficLightLogic(tlcontrol, id, programID, TLTYPE_RAIL_SIGNAL, delay, parameters),
     myCurrentPhase(DELTA_T, std::string(SUMO_MAX_CONNECTIONS, 'X'), -1), // dummy phase
     myPhaseIndex(0) {
     myDefaultCycleTime = DELTA_T;
@@ -291,7 +293,7 @@ MSRailSignal::writeBlocks(OutputDevice& od) const {
 
 bool
 MSRailSignal::hasOncomingRailTraffic(MSLink* link) {
-    if (link->getJunction()->getType() == NODETYPE_RAIL_SIGNAL && link->getState() == LINKSTATE_TL_RED) {
+    if (link->getJunction()->getType() == SumoXMLNodeType::RAIL_SIGNAL && link->getState() == LINKSTATE_TL_RED) {
         const MSEdge* bidi = link->getLaneBefore()->getEdge().getBidiEdge();
         if (bidi == nullptr) {
             return false;
@@ -452,7 +454,7 @@ MSRailSignal::LinkInfo::buildDriveWay(MSRouteIterator first, MSRouteIterator end
 void
 MSRailSignal::LinkInfo::reroute(SUMOVehicle* veh, const MSEdgeVector& occupied) {
     MSDevice_Routing* rDev = static_cast<MSDevice_Routing*>(veh->getDevice(typeid(MSDevice_Routing)));
-    SUMOTime now = MSNet::getInstance()->getCurrentTimeStep();
+    const SUMOTime now = MSNet::getInstance()->getCurrentTimeStep();
     if (rDev != nullptr &&
             (myLastRerouteVehicle != veh
              // reroute each vehicle only once if no periodic routing is allowed,
@@ -461,31 +463,21 @@ MSRailSignal::LinkInfo::reroute(SUMOVehicle* veh, const MSEdgeVector& occupied) 
         myLastRerouteVehicle = veh;
         myLastRerouteTime = now;
 
-        SUMOAbstractRouter<MSEdge, SUMOVehicle>& router = MSRoutingEngine::getRouterTT(occupied);
 #ifdef DEBUG_REROUTE
         ConstMSEdgeVector oldRoute = veh->getRoute().getEdges();
         if (DEBUG_COND_LINKINFO) {
             std::cout << SIMTIME << " reroute veh=" << veh->getID() << " rs=" << getID() << " occupied=" << toString(occupied) << "\n";
         }
 #endif
-        try {
-            veh->reroute(now, "railSignal:" + getID(), router, false, false, true); // silent
+        MSRoutingEngine::reroute(*veh, now, "railSignal:" + getID(), false, true, occupied);
 #ifdef DEBUG_REROUTE
-            if (DEBUG_COND_LINKINFO) {
-                if (veh->getRoute().getEdges() != oldRoute) {
-                    std::cout << "    rerouting successful\n";
-                }
+        // attention this works only if we are not parallel!
+        if (DEBUG_COND_LINKINFO) {
+            if (veh->getRoute().getEdges() != oldRoute) {
+                std::cout << "    rerouting successful\n";
             }
-#endif
-        } catch (ProcessError& error) {
-#ifdef DEBUG_REROUTE
-            if (DEBUG_COND_LINKINFO) {
-                std::cout << " rerouting failed: " << error.what() << "\n";
-            }
-#else
-            UNUSED_PARAMETER(error);
-#endif
         }
+#endif
     }
 }
 
@@ -926,4 +918,3 @@ MSRailSignal::DriveWay::findFlankProtection(MSLink* link, double length, LaneSet
 
 
 /****************************************************************************/
-

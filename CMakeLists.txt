@@ -8,6 +8,7 @@ option(MULTITHREADED_BUILD "Use all available cores for building (applies to Vis
 option(PROFILING "Enable output of profiling data (applies to gcc/clang builds only)" false)
 option(COVERAGE "Enable output of coverage data (applies to gcc/clang builds only)" false)
 option(SUMO_UTILS "Enable generation of a shared library for the utility functions for option handling, XML parsing etc." false)
+option(FMI "Enable generation of an FMI library for SUMO" false)
 set(BINARY_SUFFIX "" CACHE STRING "Append the suffix to every generated binary")
 set(COMPILE_DEFINITIONS "" CACHE STRING "Macros or defines to add when compiling")
 
@@ -30,7 +31,7 @@ cmake_minimum_required(VERSION 3.1)
 set(CMAKE_COLOR_MAKEFILE ON)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/build/cmake_modules/")
 
-set(ENABLED_FEATURES "${CMAKE_SYSTEM} ${CMAKE_SYSTEM_PROCESSOR} ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
+set(ENABLED_FEATURES "${CMAKE_SYSTEM} ${CMAKE_SYSTEM_PROCESSOR} ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION} ${CMAKE_BUILD_TYPE}")
 
 if (COMPILE_DEFINITIONS)
     add_compile_definitions(${COMPILE_DEFINITIONS})
@@ -40,14 +41,14 @@ endif ()
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
     "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread -Wall -pedantic -Wextra")
-    set(ENABLED_FEATURES "${ENABLED_FEATURES} ${CMAKE_BUILD_TYPE}")
     if (PROFILING)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
         set(ENABLED_FEATURES "${ENABLED_FEATURES} Profiling")
         set(BINARY_SUFFIX "${BINARY_SUFFIX}P")
     endif ()
     if (COVERAGE)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage -O0")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage -O0")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
         set(ENABLED_FEATURES "${ENABLED_FEATURES} Coverage")
     endif ()
 elseif (MSVC)
@@ -63,8 +64,9 @@ elseif (MSVC)
     if (MULTITHREADED_BUILD)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
     endif ()
-    if (MSVC_VERSION GREATER 1919)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /experimental:external /external:W3")
+    if (MSVC_VERSION GREATER 1914)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /experimental:external /external:W2")
+		set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "/external:I ")
     endif ()
     # exporting symbols for shared libraries needs to enabled explicitly
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
@@ -80,6 +82,9 @@ endif ()
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 if (SUMO_UTILS)
     set(ENABLED_FEATURES "${ENABLED_FEATURES} SumoUtilsLibrary")
+endif ()
+if (FMI)
+    set(ENABLED_FEATURES "${ENABLED_FEATURES} FMI")
 endif ()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
@@ -199,26 +204,28 @@ if (SUMO_LIBRARIES AND WIN32)
     endif ()
     # set fox
     file(GLOB FOX_PATH "${SUMO_LIBRARIES}${LIB_VERSION}/fox-?.?.??")
+    # set eigen (no version in directory name as it is a submodule)
+    file(GLOB EIGEN3_PATH "${SUMO_LIBRARIES}/eigen")
     # set all paths in prefix
-    set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};${XERCES_PATH};${ZLIB_PATH};${ZLIB_PATH}/Release;${ZLIB_PATH}/Debug;${ZLIB_PATH}/bin;${ZLIB_PATH}/lib;${PROJ_PATH};${GDAL_PATH};${FOX_PATH}")
+    set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};${EIGEN3_PATH};${XERCES_PATH};${ZLIB_PATH};${ZLIB_PATH}/Release;${ZLIB_PATH}/Debug;${ZLIB_PATH}/bin;${ZLIB_PATH}/lib;${PROJ_PATH};${GDAL_PATH};${FOX_PATH}")
     # save in variable SUMO_LIBRARIES_DLL all paths to dll files
     file(GLOB SUMO_LIBRARIES_DLL "${XERCES_PATH}/bin/*.dll"
                                  "${PROJ_PATH}/bin/*.dll"
-                                 "${GDAL_PATH}/bin/*.dll"
                                  "${FOX_PATH}/lib/*.dll" # used by old SUMOLibraries versions
                                  "${FOX_PATH}/bin/*.dll"
                                  "${ZLIB_PATH}/bin/*.dll"
                                  "${SUMO_LIBRARIES}${LIB_VERSION}/3rdPartyLibs/bzip2-?.?.?/*.dll" # used by old versions of SUMOLibraries
                                  "${SUMO_LIBRARIES}${LIB_VERSION}/3rdPartyLibs/bzip2-?.?.?/bin/*.dll"
                                  "${SUMO_LIBRARIES}${LIB_VERSION}/3rdPartyLibs/libpng-?.?.??/bin/*.dll"
-                                 "${SUMO_LIBRARIES}${LIB_VERSION}/3rdPartyLibs/tiff-?.?.?/bin/*.dll"
-                                 "${SUMO_LIBRARIES}${LIB_VERSION}/3rdPartyLibs/zlib-?.?.??/bin/*.dll"
-                                 "${SUMO_LIBRARIES}${LIB_VERSION}/3rdPartyLibs/sqlite-?.?.?/*.dll")
+                                 "${SUMO_LIBRARIES}${LIB_VERSION}/3rdPartyLibs/tiff-?.?.?/bin/*.dll")
     # set MSVC dlls
     if ("${MSVC_VERSION}" STREQUAL "1800")
         file(GLOB MSVC_DLLS "${SUMO_LIBRARIES}${LIB_VERSION}/runtimes/*.dll" "${SUMO_LIBRARIES}/msvc12${LIB_VERSION}/runtimes/*.dll")
     else()
         file(GLOB MSVC_DLLS "${SUMO_LIBRARIES}${LIB_VERSION}/runtimes/*.dll")
+        file(GLOB MORE_SUMO_LIBRARIES_DLL "${SUMO_LIBRARIES}${LIB_VERSION}/3rdPartyLibs/zlib-?.?.??/bin/*.dll"
+                                          "${SUMO_LIBRARIES}${LIB_VERSION}/3rdPartyLibs/sqlite-?.?.?/*.dll")
+        list(APPEND SUMO_LIBRARIES_DLL ${MORE_SUMO_LIBRARIES_DLL})
     endif ()
     # set google test root
     file(GLOB GTEST_ROOT "${SUMO_LIBRARIES}/googletest-?.?.?/googletest")
@@ -242,15 +249,9 @@ if (SUMO_LIBRARIES AND WIN32)
     endif ()
     set(CMAKE_LIBRARY_PATH "${CMAKE_LIBRARY_PATH};${GL2PS_PATH}/Release;${GL2PS_PATH}/lib") # "Release" used by old versions of SUMOLibraries
     set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};${FFMPEG_PATH};${OSG_PATH};${GL2PS_PATH}")
-    file(GLOB SUMO_OPTIONAL_LIBRARIES_DLL "${PROJ_PATH}/bin/*.dll" "${FFMPEG_PATH}/bin/*.dll" "${GL2PS_PATH}/Release/*.dll" "${GL2PS_PATH}/bin/*.dll")  # "Release" used by old versions of SUMOLibraries
+    file(GLOB SUMO_OPTIONAL_LIBRARIES_DLL "${GDAL_PATH}/bin/*.dll" "${FFMPEG_PATH}/bin/*.dll" "${GL2PS_PATH}/Release/*.dll" "${GL2PS_PATH}/bin/*.dll")  # "Release" used by old versions of SUMOLibraries
     # set SWIG
     set(SWIG_EXECUTABLE "${SUMO_LIBRARIES}/swigwin-3.0.12/swig.exe")
-    # set GRPC
-    if (EXISTS "${SUMO_LIBRARIES}/grpc-1.24.2")
-        set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};${SUMO_LIBRARIES}/grpc-1.24.2")
-        set(CMAKE_LIBRARY_PATH "${CMAKE_LIBRARY_PATH};${SUMO_LIBRARIES}/grpc-1.24.2/lib")
-        set(GRPC_CPP_PLUGIN "${SUMO_LIBRARIES}/grpc-1.24.2/bin/grpc_cpp_plugin.exe")
-    endif ()
     # set protobuf
     set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};${SUMO_LIBRARIES}/3rdPartyLibs/protobuf-3.9.1")
     set(Protobuf_PROTOC_EXECUTABLE "${SUMO_LIBRARIES}/3rdPartyLibs/protobuf-3.9.1/bin/protoc.exe")
@@ -266,18 +267,18 @@ endif ()
 
 find_package(XercesC REQUIRED)
 if (XercesC_FOUND)
-    include_directories(${XercesC_INCLUDE_DIRS})
+    include_directories(SYSTEM ${XercesC_INCLUDE_DIRS})
 endif (XercesC_FOUND)
 
 find_package(Proj)
 if (PROJ_FOUND)
-    include_directories(${PROJ_INCLUDE_DIR})
+    include_directories(SYSTEM ${PROJ_INCLUDE_DIR})
     set(ENABLED_FEATURES "${ENABLED_FEATURES} Proj")
 endif (PROJ_FOUND)
 
 find_package(FOX)
 if (FOX_FOUND)
-    include_directories(${FOX_INCLUDE_DIR})
+    include_directories(SYSTEM ${FOX_INCLUDE_DIR})
     add_definitions(${FOX_CXX_FLAGS})
     add_definitions(-DFLOAT_MATH_FUNCTIONS)
     set(HAVE_FOX 1)
@@ -287,20 +288,25 @@ endif (FOX_FOUND)
 find_package(X11)
 if (X11_FOUND)
     link_directories(${X11_LIBRARY_DIR})
-    include_directories(${X11_INCLUDE_DIR})
+    include_directories(SYSTEM ${X11_INCLUDE_DIR})
 endif (X11_FOUND)
 
 find_package(ZLIB)
 if (ZLIB_FOUND)
     set(HAVE_ZLIB 1)
     link_directories(${ZLIB_LIBRARY_DIR})
-    include_directories(${ZLIB_INCLUDE_DIR})
+    include_directories(SYSTEM ${ZLIB_INCLUDE_DIR})
+endif ()
+
+find_package(SWIG 3.0)
+if (SWIG_FOUND)
+    set(ENABLED_FEATURES "${ENABLED_FEATURES} SWIG")
 endif ()
 
 if (CHECK_OPTIONAL_LIBS)
     find_package(GDAL)
     if (GDAL_FOUND)
-        include_directories(${GDAL_INCLUDE_DIR})
+        include_directories(SYSTEM ${GDAL_INCLUDE_DIR})
         set(HAVE_GDAL 1)
         set(ENABLED_FEATURES "${ENABLED_FEATURES} GDAL")
     else (GDAL_FOUND)
@@ -309,41 +315,35 @@ if (CHECK_OPTIONAL_LIBS)
 
     find_package(FFMPEG)
     if (FFMPEG_FOUND)
-        include_directories(${FFMPEG_INCLUDE_DIR})
+        include_directories(SYSTEM ${FFMPEG_INCLUDE_DIR})
         set(HAVE_FFMPEG 1)
         set(ENABLED_FEATURES "${ENABLED_FEATURES} FFmpeg")
     endif ()
 
     find_package(OpenSceneGraph 3.4.0 COMPONENTS osgGA osgViewer osgUtil osgDB osgText)
     if (OPENSCENEGRAPH_FOUND)
-        include_directories(${OPENSCENEGRAPH_INCLUDE_DIRS})
+        include_directories(SYSTEM ${OPENSCENEGRAPH_INCLUDE_DIRS})
         set(HAVE_OSG 1)
         set(ENABLED_FEATURES "${ENABLED_FEATURES} OSG")
     endif ()
 
     find_package(GL2PS)
     if (GL2PS_FOUND)
-        include_directories(${GL2PS_INCLUDE_DIR})
+        include_directories(SYSTEM ${GL2PS_INCLUDE_DIR})
         set(HAVE_GL2PS 1)
         set(ENABLED_FEATURES "${ENABLED_FEATURES} GL2PS")
     endif (GL2PS_FOUND)
 
-    find_package(SWIG 3.0)
-    if (SWIG_FOUND)
-        set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-        set(ENABLED_FEATURES "${ENABLED_FEATURES} SWIG")
-    endif ()
+    # Eigen (for overhead wire / electric circuit simulation)
+    # TODO: Probably may be used in 32bit build as well.
+    find_package(Eigen3 3.2 MODULE)
+    if (EIGEN3_FOUND)
+        include_directories(SYSTEM ${EIGEN3_INCLUDE_DIR})
+        set(HAVE_EIGEN 1)  # see config.h.cmake for #cmakedefine
+        set(ENABLED_FEATURES "${ENABLED_FEATURES} Eigen")
+    endif (EIGEN3_FOUND)
 
-    #if (NOT ${MSVC_VERSION} STREQUAL "1800")
-    #    find_package(GRPC)
-    #    find_package(Protobuf)
-    #    if (GRPC_FOUND AND Protobuf_FOUND)
-    #        include_directories(${Protobuf_INCLUDE_DIRS} ${GRPC_INCLUDE_DIRS})
-    #        set(ENABLED_FEATURES "${ENABLED_FEATURES} GRPC")
-    #    endif (GRPC_FOUND AND Protobuf_FOUND)
-    #endif ()
-
-    set(SUMO_LIBRARIES_DLL "${SUMO_LIBRARIES_DLL};${SUMO_OPTIONAL_LIBRARIES_DLL}")
+    list(APPEND SUMO_LIBRARIES_DLL ${SUMO_OPTIONAL_LIBRARIES_DLL})
 endif (CHECK_OPTIONAL_LIBS)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/src)
@@ -351,7 +351,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 set(commonlibs
         utils_distribution utils_shapes utils_options
-        utils_xml utils_geom utils_common utils_importio utils_iodevices foreign_tcpip
+        utils_xml utils_geom utils_common utils_importio utils_iodevices utils_traction_wire foreign_tcpip
         ${XercesC_LIBRARIES} ${ZLIB_LIBRARIES} ${PROJ_LIBRARY})
 if (MSVC)
     set(commonlibs ${commonlibs} ws2_32)
@@ -385,37 +385,38 @@ if (NOT ${SETUPTOOLS_MISSING})
 endif ()
 
 if (SUMO_LIBRARIES AND WIN32)
-    string(REPLACE "${SUMO_LIBRARIES}" "" SUMO_LIBRARIES_DLL "${SUMO_LIBRARIES_DLL}")
+    # check if MSVC dll runtimes have to be copied
+    if (INSTALL_DLL_RUNTIMES)
+        list(APPEND SUMO_LIBRARIES_DLL ${MSVC_DLLS})
+    endif(INSTALL_DLL_RUNTIMES)
     # copy common dlls
-    set(COMMON_DLLS "and installing common dlls")
-    add_custom_command(OUTPUT ${COMMON_DLLS}
-                       COMMAND ${PYTHON_EXECUTABLE} -c "import shutil;[shutil.copy('${SUMO_LIBRARIES}'+l, '${CMAKE_SOURCE_DIR}/bin') for l in '${SUMO_LIBRARIES_DLL}'.split(';')]"
-                       DEPENDS ${SUMO_LIBRARIES})
+    foreach(DLL ${SUMO_LIBRARIES_DLL})
+        get_filename_component(DLL_BASENAME ${DLL} NAME)
+        set(TARGET_DLL ${CMAKE_SOURCE_DIR}/bin/${DLL_BASENAME})
+        list(FIND TARGET_DLLS ${TARGET_DLL} DLL_KNOWN)
+        if (DLL_KNOWN EQUAL -1)
+            add_custom_command(OUTPUT ${TARGET_DLL}
+                               COMMAND ${CMAKE_COMMAND} -E copy ${DLL} ${TARGET_DLL}
+                               DEPENDS ${DLL})
+            list(APPEND TARGET_DLLS ${TARGET_DLL})
+        endif()
+    endforeach(DLL)
     # copy OSG dlls
     if (HAVE_OSG)
-        set(OSG_DLLS "and installing OSG dlls")
-        add_custom_command(OUTPUT ${OSG_DLLS}
+        set(OSG_TARGET ${CMAKE_SOURCE_DIR}/bin/osg.dll)
+        add_custom_command(OUTPUT ${OSG_TARGET}
                            COMMAND ${CMAKE_COMMAND} -E copy_directory ${OSG_PATH}/bin ${CMAKE_SOURCE_DIR}/bin
                            DEPENDS ${OSG_PATH})
     endif (HAVE_OSG)
     # proj 6 needs to copy "share/proj" folder in SUMO_HOME/data
     if (PROJ_6)
-        set(PROJ_DATA "and installing proj data")
+        set(PROJ_DATA ${CMAKE_SOURCE_DIR}/data/proj/proj.db)
         add_custom_command(OUTPUT ${PROJ_DATA}
                            COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJ_PATH}/share/proj ${CMAKE_SOURCE_DIR}/data/proj
                            DEPENDS ${PROJ_PATH})
     endif (PROJ_6)
-    # check if MSVC dll runtimes has to be copied
-    if (INSTALL_DLL_RUNTIMES)
-        string(REPLACE "${SUMO_LIBRARIES}" "" MSVC_DLLS "${MSVC_DLLS}")
-        # copy MSVC140 dlls
-        set(MSVC_RUNTIMES "and installing MSVC dlls")
-        add_custom_command(OUTPUT ${MSVC_RUNTIMES}
-                           COMMAND ${PYTHON_EXECUTABLE} -c "import shutil;[shutil.copy('${SUMO_LIBRARIES}'+l, '${CMAKE_SOURCE_DIR}/bin') for l in '${MSVC_DLLS}'.split(';')]"
-                           DEPENDS ${SUMO_LIBRARIES})
-    endif(INSTALL_DLL_RUNTIMES)
     # set install_dll target
-    add_custom_target(install_dll ALL DEPENDS ${COMMON_DLLS} ${OSG_DLLS} ${PROJ_DATA} ${MSVC_RUNTIMES})
+    add_custom_target(install_dll ALL DEPENDS ${TARGET_DLLS} ${OSG_TARGET} ${PROJ_DATA})
     set_property(TARGET install_dll PROPERTY FOLDER "CMake")
 endif ()
 
@@ -428,27 +429,24 @@ if (MVN_EXECUTABLE AND Java_FOUND)
         get_filename_component(JAVA_HOME ${JAVA_BIN} DIRECTORY)
         set(MVN_COMMAND_PREFIX ${CMAKE_COMMAND} -E env JAVA_HOME=${JAVA_HOME})
     endif ()
-    add_custom_target(cadyts
-        COMMAND ${MVN_COMMAND_PREFIX} ${MVN_EXECUTABLE} --batch-mode -f tools/contributed/calibration/pom.xml clean install
-        COMMAND ${CMAKE_COMMAND} -E copy tools/contributed/calibration/utilities/target/floetteroed-utilities-master-SNAPSHOT.jar bin
-        COMMAND ${CMAKE_COMMAND} -E copy tools/contributed/calibration/cadyts/target/cadyts-master-SNAPSHOT.jar bin
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
     add_custom_target(traas
         COMMAND ${MVN_COMMAND_PREFIX} ${MVN_EXECUTABLE} --batch-mode -f tools/contributed/traas/pom.xml clean install
         COMMAND ${CMAKE_COMMAND} -E copy tools/contributed/traas/target/traas-1.0-jar-with-dependencies.jar bin/TraaS.jar
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
     add_custom_target(lisum-core
         COMMAND ${MVN_COMMAND_PREFIX} ${MVN_EXECUTABLE} --batch-mode -f tools/contributed/lisum-core/pom.xml clean install
-        COMMAND ${CMAKE_COMMAND} -E copy tools/contributed/lisum-core/target/lisum-core-1.0.1-SNAPSHOT.jar bin
-        COMMAND ${MVN_EXECUTABLE} install:install-file -Dfile=bin/lisum-core-1.0.1-SNAPSHOT.jar -DgroupId=de.dlr.ts -DartifactId=lisum-core -Dversion=1.0.1 -Dpackaging=jar
+        COMMAND ${CMAKE_COMMAND} -E copy tools/contributed/lisum-core/target/lisum-core-1.0.1-SNAPSHOT-jar-with-dependencies.jar bin/lisum-core.jar
+        COMMAND ${MVN_EXECUTABLE} install:install-file -Dfile=tools/contributed/lisum-core/target/lisum-core-1.0.1-SNAPSHOT.jar -DgroupId=de.dlr.ts -DartifactId=lisum-core -Dversion=1.0.1 -Dpackaging=jar
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
     add_dependencies(lisum-core traas)
     add_custom_target(lisum-gui
         COMMAND ${MVN_COMMAND_PREFIX} ${MVN_EXECUTABLE} --batch-mode -f tools/contributed/lisum-gui/pom_new.xml clean install
-        COMMAND ${CMAKE_COMMAND} -E copy tools/contributed/lisum-gui/target/lisum-gui-1.0.jar bin
+        COMMAND ${CMAKE_COMMAND} -E copy tools/contributed/lisum-gui/target/lisum-gui-1.0-jar-with-dependencies.jar bin/lisum-gui.jar
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
     add_dependencies(lisum-gui lisum-core)
-    set(JAVA_TARGETS cadyts traas lisum-core lisum-gui)
+    add_custom_target(lisum)
+    add_dependencies(lisum lisum-gui lisum-core)
+    set(JAVA_TARGETS traas lisum-core lisum-gui)
     foreach (JAVAT ${JAVA_TARGETS})
         set_property(TARGET ${JAVAT} PROPERTY EXCLUDE_FROM_DEFAULT_BUILD TRUE)
         set_property(TARGET ${JAVAT} PROPERTY FOLDER "java")
@@ -521,7 +519,8 @@ if (COVERAGE)
         add_custom_target(lcov
             COMMAND rm -rf docs/lcov
             COMMAND mkdir docs/lcov
-            COMMAND ${LCOV_EXECUTABLE} -d . -c --no-external --output-file docs/lcov/lcov.info
+            COMMAND ${LCOV_EXECUTABLE} -d . --capture --output-file docs/lcov/lcov.info
+            COMMAND ${LCOV_EXECUTABLE} --remove docs/lcov/lcov.info '/usr/*' --output-file docs/lcov/lcov.info
             COMMAND genhtml -o docs/lcov/html docs/lcov/lcov.info
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
         add_custom_target(lcov-reset
@@ -546,6 +545,7 @@ add_custom_target(examples
 add_dependencies(examples sumo netconvert dfrouter duarouter jtrrouter)
 set_property(TARGET examples PROPERTY EXCLUDE_FROM_DEFAULT_BUILD TRUE)
 set_property(TARGET examples PROPERTY FOLDER "doc")
+
 add_test(exampletest ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/docs/examples/runAll.py)
 find_package(Git)
 if (GIT_FOUND)
@@ -554,14 +554,17 @@ if (GIT_FOUND)
         COMMAND ${GIT_EXECUTABLE} archive --prefix sumo-${PACKAGE_VERSION}/ -o sumo-${PACKAGE_VERSION}.zip HEAD
         COMMAND unzip -q sumo-${PACKAGE_VERSION}.zip
         COMMAND cp -a docs/tutorial docs/examples sumo-${PACKAGE_VERSION}/docs
-        COMMAND find tools/contributed/saga/ tools/contributed/*matlab -type f | grep -v .git | xargs cp --parents --target-dir sumo-${PACKAGE_VERSION}
+        COMMAND find tools/contributed/saga/ tools/contributed/traci4matlab -type f | grep -v .git | xargs cp --parents --target-dir sumo-${PACKAGE_VERSION}
+        COMMAND mkdir sumo-${PACKAGE_VERSION}/include
+        COMMAND cp ${CMAKE_BINARY_DIR}/src/version.h sumo-${PACKAGE_VERSION}/include
         COMMAND zip -rq sumo-src-${PACKAGE_VERSION}.zip sumo-${PACKAGE_VERSION}
-        COMMAND tar czf sumo-src-${PACKAGE_VERSION}.tar.gz sumo-${PACKAGE_VERSION}
+        COMMAND tar -czf sumo-src-${PACKAGE_VERSION}.tar.gz sumo-${PACKAGE_VERSION}
         COMMAND cp -a docs/userdoc docs/pydoc docs/javadoc docs/man sumo-${PACKAGE_VERSION}/docs
+        COMMAND tar -czf sumo-debian-src-${PACKAGE_VERSION}.tar.gz --exclude "*.jar" sumo-${PACKAGE_VERSION}
         COMMAND cp bin/*.jar sumo-${PACKAGE_VERSION}/bin
         COMMAND cp -a tests sumo-${PACKAGE_VERSION}
         COMMAND zip -rq sumo-all-${PACKAGE_VERSION}.zip sumo-${PACKAGE_VERSION}
-        COMMAND tar czf sumo-all-${PACKAGE_VERSION}.tar.gz sumo-${PACKAGE_VERSION}
+        COMMAND tar -czf sumo-all-${PACKAGE_VERSION}.tar.gz sumo-${PACKAGE_VERSION}
         COMMAND rm -rf sumo-${PACKAGE_VERSION} sumo-${PACKAGE_VERSION}.zip
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
     add_dependencies(dist examples doc ${JAVA_TARGETS})
@@ -582,8 +585,4 @@ if (GIT_FOUND)
     set_property(TARGET distcheck PROPERTY FOLDER "CMake")
     set_property(TARGET distcheck PROPERTY EXCLUDE_FROM_DEFAULT_BUILD TRUE)
 endif ()
-
-set(CPACK_GENERATOR "ZIP")
-include(CPackConfig)
-
 message(STATUS "Enabled features: ${ENABLED_FEATURES}")

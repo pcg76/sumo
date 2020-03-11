@@ -1,24 +1,22 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2019 German Aerospace Center (DLR) and others.
-// This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v2.0
-// which accompanies this distribution, and is available at
-// http://www.eclipse.org/legal/epl-v20.html
-// SPDX-License-Identifier: EPL-2.0
+// Copyright (C) 2001-2020 German Aerospace Center (DLR) and others.
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0/
+// This Source Code may also be made available under the following Secondary
+// Licenses when the conditions for such availability set forth in the Eclipse
+// Public License 2.0 are satisfied: GNU General Public License, version 2
+// or later which is available at
+// https://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html
+// SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later
 /****************************************************************************/
 /// @file    MESegment.cpp
 /// @author  Daniel Krajzewicz
 /// @date    Tue, May 2005
-/// @version $Id$
 ///
 // A single mesoscopic segment (cell)
 /****************************************************************************/
-
-
-// ===========================================================================
-// included modules
-// ===========================================================================
 #include <config.h>
 
 #include <algorithm>
@@ -33,17 +31,17 @@
 #include <microsim/MSVehicle.h>
 #include <microsim/MSMoveReminder.h>
 #include <microsim/output/MSXMLRawOut.h>
+#include <microsim/output/MSDetectorFileOutput.h>
 #include <microsim/MSVehicleControl.h>
 #include <microsim/devices/MSDevice.h>
 #include <utils/common/FileHelpers.h>
-#include <utils/iodevices/BinaryInputDevice.h>
 #include <utils/iodevices/OutputDevice.h>
 #include <utils/common/RandHelper.h>
 #include "MEVehicle.h"
 #include "MELoop.h"
 #include "MESegment.h"
 
-#define DEFAULT_VEH_LENGHT_WITH_GAP (SUMOVTypeParameter::getDefault().length + SUMOVTypeParameter::getDefault().minGap)
+#define DEFAULT_VEH_LENGTH_WITH_GAP (SUMOVTypeParameter::getDefault().length + SUMOVTypeParameter::getDefault().minGap)
 // avoid division by zero when driving very slowly
 #define MESO_MIN_SPEED (0.05)
 
@@ -57,7 +55,7 @@
 // ===========================================================================
 // static member defintion
 // ===========================================================================
-MSEdge MESegment::myDummyParent("MESegmentDummyParent", -1, EDGEFUNC_UNKNOWN, "", "", -1, 0);
+MSEdge MESegment::myDummyParent("MESegmentDummyParent", -1, SumoXMLEdgeFunc::UNKNOWN, "", "", -1, 0);
 MESegment MESegment::myVaporizationTarget("vaporizationTarget");
 const double MESegment::DO_NOT_PATCH_JAM_THRESHOLD(std::numeric_limits<double>::max());
 
@@ -78,22 +76,22 @@ MESegment::MESegment(const std::string& id,
     myTau_jf((SUMOTime)(taujf / parent.getLanes().size())),
     myTau_jj((SUMOTime)(taujj / parent.getLanes().size())),
     myTau_length(MAX2(MESO_MIN_SPEED, speed) * parent.getLanes().size() / TIME2STEPS(1)),
-    myHeadwayCapacity(length / DEFAULT_VEH_LENGHT_WITH_GAP * parent.getLanes().size())/* Eissfeldt p. 69 */,
+    myHeadwayCapacity(length / DEFAULT_VEH_LENGTH_WITH_GAP * parent.getLanes().size())/* Eissfeldt p. 69 */,
     myCapacity(length * parent.getLanes().size()),
     myOccupancy(0.f),
     myJunctionControl(junctionControl),
     myTLSPenalty(MSGlobals::gMesoTLSPenalty > 0 &&
                  // only apply to the last segment of a tls-controlled edge
                  myNextSegment == nullptr && (
-                     parent.getToJunction()->getType() == NODETYPE_TRAFFIC_LIGHT ||
-                     parent.getToJunction()->getType() == NODETYPE_TRAFFIC_LIGHT_NOJUNCTION ||
-                     parent.getToJunction()->getType() == NODETYPE_TRAFFIC_LIGHT_RIGHT_ON_RED)),
+                     parent.getToJunction()->getType() == SumoXMLNodeType::TRAFFIC_LIGHT ||
+                     parent.getToJunction()->getType() == SumoXMLNodeType::TRAFFIC_LIGHT_NOJUNCTION ||
+                     parent.getToJunction()->getType() == SumoXMLNodeType::TRAFFIC_LIGHT_RIGHT_ON_RED)),
     myMinorPenalty(MSGlobals::gMesoMinorPenalty > 0 &&
                    // only apply to the last segment of an uncontrolled edge that has at least 1 minor link
                    myNextSegment == nullptr &&
-                   parent.getToJunction()->getType() != NODETYPE_TRAFFIC_LIGHT &&
-                   parent.getToJunction()->getType() != NODETYPE_TRAFFIC_LIGHT_NOJUNCTION &&
-                   parent.getToJunction()->getType() != NODETYPE_TRAFFIC_LIGHT_RIGHT_ON_RED &&
+                   parent.getToJunction()->getType() != SumoXMLNodeType::TRAFFIC_LIGHT &&
+                   parent.getToJunction()->getType() != SumoXMLNodeType::TRAFFIC_LIGHT_NOJUNCTION &&
+                   parent.getToJunction()->getType() != SumoXMLNodeType::TRAFFIC_LIGHT_RIGHT_ON_RED &&
                    parent.hasMinorLink()),
     myNumCars(0),
     myEntryBlockTime(SUMOTime_MIN),
@@ -168,7 +166,7 @@ MESegment::recomputeJamThreshold(double jamThresh) {
     // f(n_jam_threshold) = tau_jf_withLength (for continuity)
     // f(myHeadwayCapacity) = myTau_jj * myHeadwayCapacity
 
-    const SUMOTime tau_jf_withLength = tauWithVehLength(myTau_jf, DEFAULT_VEH_LENGHT_WITH_GAP);
+    const SUMOTime tau_jf_withLength = tauWithVehLength(myTau_jf, DEFAULT_VEH_LENGTH_WITH_GAP);
     if (myJamThreshold < myCapacity) {
         // jamming is possible
         const double n_jam_threshold = myHeadwayCapacity * myJamThreshold / myCapacity; // number of vehicles above which the segment is jammed
@@ -200,11 +198,11 @@ MESegment::jamThresholdForSpeed(double speed, double jamThresh) const {
     }
 #ifdef DEBUG_JAMTHRESHOLD
     if (true || DEBUG_COND) {
-        std::cout << "jamThresholdForSpeed seg=" << getID() << " speed=" << speed << " jamThresh=" << jamThresh << " ffVehs=" << std::ceil(myLength / (-jamThresh * speed * STEPS2TIME(tauWithVehLength(myTau_ff, DEFAULT_VEH_LENGHT_WITH_GAP)))) << " thresh=" << std::ceil(myLength / (-jamThresh * speed * STEPS2TIME(tauWithVehLength(myTau_ff, DEFAULT_VEH_LENGHT_WITH_GAP)))) * DEFAULT_VEH_LENGHT_WITH_GAP
+        std::cout << "jamThresholdForSpeed seg=" << getID() << " speed=" << speed << " jamThresh=" << jamThresh << " ffVehs=" << std::ceil(myLength / (-jamThresh * speed * STEPS2TIME(tauWithVehLength(myTau_ff, DEFAULT_VEH_LENGTH_WITH_GAP)))) << " thresh=" << std::ceil(myLength / (-jamThresh * speed * STEPS2TIME(tauWithVehLength(myTau_ff, DEFAULT_VEH_LENGTH_WITH_GAP)))) * DEFAULT_VEH_LENGTH_WITH_GAP
                   << "\n";
     }
 #endif
-    return std::ceil(myLength / (-jamThresh * speed * STEPS2TIME(tauWithVehLength(myTau_ff, DEFAULT_VEH_LENGHT_WITH_GAP)))) * DEFAULT_VEH_LENGHT_WITH_GAP;
+    return std::ceil(myLength / (-jamThresh * speed * STEPS2TIME(tauWithVehLength(myTau_ff, DEFAULT_VEH_LENGTH_WITH_GAP)))) * DEFAULT_VEH_LENGTH_WITH_GAP;
 }
 
 
@@ -503,10 +501,12 @@ MESegment::receive(MEVehicle* veh, SUMOTime time, bool isDepart, bool afterTelep
         veh->setEventTime(time + TIME2STEPS(myLength / speed)); // for correct arrival speed
         addReminders(veh);
         veh->activateReminders(MSMoveReminder::NOTIFICATION_JUNCTION);
-        veh->updateDetectors(time, true, MSMoveReminder::NOTIFICATION_ARRIVED);
+        veh->updateDetectors(time, true, 
+                veh->getEdge()->isVaporizing() ? MSMoveReminder::NOTIFICATION_VAPORIZED_VAPORIZER : MSMoveReminder::NOTIFICATION_ARRIVED);
         MSNet::getInstance()->getVehicleControl().scheduleVehicleRemoval(veh);
         return;
     }
+    assert(veh->getEdge() == &getEdge());
     // route continues
     const double maxSpeedOnEdge = veh->getEdge()->getVehicleMaxSpeed(veh);
     const double uspeed = MAX2(maxSpeedOnEdge, MESO_MIN_SPEED);
@@ -528,7 +528,7 @@ MESegment::receive(MEVehicle* veh, SUMOTime time, bool isDepart, bool afterTelep
     MEVehicle* newLeader = nullptr; // first vehicle in the current queue
     SUMOTime tleave = MAX2(veh->getStoptime(this, time) + TIME2STEPS(myLength / uspeed) + getLinkPenalty(veh), myBlockTimes[nextQueIndex]);
     if (veh->isStopped()) {
-        MSNet::getInstance()->getVehicleControl().addWaiting(&myEdge, veh);
+        myEdge.addWaiting(veh);
     }
     myEdge.lock();
     if (cars.empty()) {
@@ -573,17 +573,18 @@ MESegment::receive(MEVehicle* veh, SUMOTime time, bool isDepart, bool afterTelep
 
 
 bool
-MESegment::vaporizeAnyCar(SUMOTime currentTime) {
-    MEVehicle* remove = nullptr;
-    for (Queues::const_iterator k = myCarQues.begin(); k != myCarQues.end(); ++k) {
-        if (!k->empty()) {
-            // remove last in queue
-            remove = k->front();
-            if (k->size() == 1) {
-                MSGlobals::gMesoNet->removeLeaderCar(remove);
+MESegment::vaporizeAnyCar(SUMOTime currentTime, const MSDetectorFileOutput* filter) {
+    for (Queue& k : myCarQues) {
+        if (!k.empty()) {
+            for (MEVehicle* veh : k) {
+                if (filter->vehicleApplies(*veh)) {
+                    if (k.size() == 1) {
+                        MSGlobals::gMesoNet->removeLeaderCar(veh);
+                    }
+                    MSGlobals::gMesoNet->changeSegment(veh, currentTime, &myVaporizationTarget, MSMoveReminder::NOTIFICATION_VAPORIZED_CALIBRATOR);
+                    return true;
+                }
             }
-            MSGlobals::gMesoNet->changeSegment(remove, currentTime, &myVaporizationTarget);
-            return true;
         }
     }
     return false;
@@ -756,5 +757,18 @@ MESegment::getMaxPenaltySeconds() const {
     }
     return maxPenalty;
 }
+
+double
+MESegment::getWaitingSeconds() const {
+    double result = 0;
+    for (const Queue& q : myCarQues) {
+        // @note: only the leader currently accumulates waitingTime but this might change in the future
+        for (const MEVehicle* veh : q) {
+            result += veh->getWaitingSeconds();
+        }
+    }
+    return result;
+}
+
 
 /****************************************************************************/

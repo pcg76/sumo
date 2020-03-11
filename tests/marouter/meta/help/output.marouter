@@ -1,5 +1,5 @@
-Eclipse SUMO marouter Version v1_3_1+0470-4a6b08f445
- Copyright (C) 2001-2019 German Aerospace Center (DLR) and others; https://sumo.dlr.de
+Eclipse SUMO marouter Version v1_4_0+1029-d1b8be6105
+ Copyright (C) 2001-2020 German Aerospace Center (DLR) and others; https://sumo.dlr.de
 Import O/D-matrices for macroscopic traffic assignment to generate SUMO routes
 
 Usage: marouter [OPTION]*
@@ -29,6 +29,8 @@ Input Options:
                                       intervals
   --taz-param STR[]                 Parameter key(s) defining source (and sink)
                                       taz
+  --junction-taz                    Initialize a TAZ for every junction to use
+                                      attributes toJunction and fromJunction
 
 Output Options:
   --write-license                   Include license info into every output file
@@ -135,6 +137,8 @@ Report Options:
                                       network inputs ("never", "auto" or
                                       "always")
   -W, --no-warnings                 Disables output of warnings
+  --aggregate-warnings INT          Aggregate warnings of the same type
+                                      whenever more than INT occur
   -l, --log FILE                    Writes all messages to FILE (implies
                                       verbose)
   --message-log FILE                Writes all non-error messages to FILE

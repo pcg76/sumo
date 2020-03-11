@@ -1,11 +1,15 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2019 German Aerospace Center (DLR) and others.
-// This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v2.0
-// which accompanies this distribution, and is available at
-// http://www.eclipse.org/legal/epl-v20.html
-// SPDX-License-Identifier: EPL-2.0
+// Copyright (C) 2001-2020 German Aerospace Center (DLR) and others.
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0/
+// This Source Code may also be made available under the following Secondary
+// Licenses when the conditions for such availability set forth in the Eclipse
+// Public License 2.0 are satisfied: GNU General Public License, version 2
+// or later which is available at
+// https://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html
+// SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later
 /****************************************************************************/
 /// @file    NIXMLEdgesHandler.cpp
 /// @author  Daniel Krajzewicz
@@ -15,15 +19,9 @@
 /// @author  Laura Bieker
 /// @author  Leonhard Luecken
 /// @date    Tue, 20 Nov 2001
-/// @version $Id$
 ///
 // Importer for network edges stored in XML
 /****************************************************************************/
-
-
-// ===========================================================================
-// included modules
-// ===========================================================================
 #include <config.h>
 
 #include <string>
@@ -94,7 +92,7 @@ NIXMLEdgesHandler::myStartElement(int element,
         case SUMO_TAG_SPLIT:
             addSplit(attrs);
             break;
-        case SUMO_TAG_DELETE:
+        case SUMO_TAG_DEL:
             deleteEdge(attrs);
             break;
         case SUMO_TAG_ROUNDABOUT:
@@ -167,10 +165,10 @@ NIXMLEdgesHandler::addEdge(const SUMOSAXAttributes& attrs) {
     myCurrentEdge = myEdgeCont.retrieve(myCurrentID);
     // check deprecated (unused) attributes
     // use default values, first
-    myCurrentPriority = myTypeCont.getPriority("");
-    myCurrentLaneNo = myTypeCont.getNumLanes("");
+    myCurrentType = myOptions.getString("default.type");
+    myCurrentPriority = myTypeCont.getPriority(myCurrentType);
+    myCurrentLaneNo = myTypeCont.getNumLanes(myCurrentType);
     myCurrentEndOffset = NBEdge::UNSPECIFIED_OFFSET;
-    myCurrentType = "";
     if (myCurrentEdge != nullptr) {
         // update existing edge. only update lane-specific settings when explicitly requested
         myIsUpdate = true;
@@ -180,12 +178,12 @@ NIXMLEdgesHandler::addEdge(const SUMOSAXAttributes& attrs) {
         myCurrentType = myCurrentEdge->getTypeID();
     } else {
         // this is a completely new edge. get the type specific defaults
-        myCurrentSpeed = myTypeCont.getSpeed("");
-        myPermissions = myTypeCont.getPermissions("");
-        myCurrentWidth = myTypeCont.getWidth("");
+        myCurrentSpeed = myTypeCont.getSpeed(myCurrentType);
+        myPermissions = myTypeCont.getPermissions(myCurrentType);
+        myCurrentWidth = myTypeCont.getWidth(myCurrentType);
     }
     myShape = PositionVector();
-    myLanesSpread = LANESPREAD_RIGHT;
+    myLanesSpread = SUMOXMLDefinitions::LaneSpreadFunctions.get(myOptions.getString("default.spreadtype"));
     myLength = NBEdge::UNSPECIFIED_LOADED_LENGTH;
     myCurrentStreetName = "";
     myReinitKeepEdgeShape = false;
@@ -280,6 +278,7 @@ NIXMLEdgesHandler::addEdge(const SUMOSAXAttributes& attrs) {
     // try to set the nodes
     if (!setNodes(attrs)) {
         // return if this failed
+        myCurrentEdge = nullptr;
         return;
     }
     // try to get the shape
@@ -294,6 +293,7 @@ NIXMLEdgesHandler::addEdge(const SUMOSAXAttributes& attrs) {
     myBikeLaneWidth = attrs.getOpt<double>(SUMO_ATTR_BIKELANEWIDTH, myCurrentID.c_str(), ok, myBikeLaneWidth);
     // insert the parsed edge into the edges map
     if (!ok) {
+        myCurrentEdge = nullptr;
         return;
     }
     // check whether a previously defined edge shall be overwritten
@@ -469,34 +469,35 @@ NIXMLEdgesHandler::setNodes(const SUMOSAXAttributes& attrs) {
     // the names and the coordinates of the beginning and the end node
     // may be found, try
     bool ok = true;
-    std::string begNodeID = myIsUpdate ? myCurrentEdge->getFromNode()->getID() : "";
-    std::string endNodeID = myIsUpdate ? myCurrentEdge->getToNode()->getID() : "";
-    std::string oldBegID = begNodeID;
-    std::string oldEndID = endNodeID;
+    if (myIsUpdate) {
+        myFromNode = myCurrentEdge->getFromNode();
+        myToNode = myCurrentEdge->getToNode();
+    }
     if (attrs.hasAttribute(SUMO_ATTR_FROM)) {
-        begNodeID = attrs.get<std::string>(SUMO_ATTR_FROM, nullptr, ok);
+        const std::string begNodeID = attrs.get<std::string>(SUMO_ATTR_FROM, nullptr, ok);
+        if (begNodeID != "") {
+            myFromNode = myNodeCont.retrieve(begNodeID);
+            if (myFromNode == nullptr) {
+                WRITE_ERROR("Edge's '" + myCurrentID + "' from-node '" + begNodeID + "' is not known.");
+            }
+        }
     } else if (!myIsUpdate) {
         WRITE_ERROR("The from-node is not given for edge '" + myCurrentID + "'.");
         ok = false;
     }
     if (attrs.hasAttribute(SUMO_ATTR_TO)) {
-        endNodeID = attrs.get<std::string>(SUMO_ATTR_TO, nullptr, ok);
+        const std::string endNodeID = attrs.get<std::string>(SUMO_ATTR_TO, nullptr, ok);
+        if (endNodeID != "") {
+            myToNode = myNodeCont.retrieve(endNodeID);
+            if (myToNode == nullptr) {
+                WRITE_ERROR("Edge's '" + myCurrentID + "' to-node '" + endNodeID + "' is not known.");
+            }
+        }
     } else if (!myIsUpdate) {
         WRITE_ERROR("The to-node is not given for edge '" + myCurrentID + "'.");
         ok = false;
     }
-    if (!ok) {
-        return false;
-    }
-    myFromNode = myNodeCont.retrieve(begNodeID);
-    myToNode = myNodeCont.retrieve(endNodeID);
-    if (myFromNode == nullptr) {
-        WRITE_ERROR("Edge's '" + myCurrentID + "' from-node '" + begNodeID + "' is not known.");
-    }
-    if (myToNode == nullptr) {
-        WRITE_ERROR("Edge's '" + myCurrentID + "' to-node '" + endNodeID + "' is not known.");
-    }
-    return myFromNode != nullptr && myToNode != nullptr;
+    return ok && myFromNode != nullptr && myToNode != nullptr;
 }
 
 
@@ -544,7 +545,7 @@ NIXMLEdgesHandler::deleteEdge(const SUMOSAXAttributes& attrs) {
     }
     NBEdge* edge = myEdgeCont.retrieve(myCurrentID);
     if (edge == nullptr) {
-        WRITE_WARNING("Ignoring tag '" + toString(SUMO_TAG_DELETE) + "' for unknown edge '" +
+        WRITE_WARNING("Ignoring tag '" + toString(SUMO_TAG_DEL) + "' for unknown edge '" +
                       myCurrentID + "'");
         return;
     }
@@ -624,4 +625,3 @@ NIXMLEdgesHandler::addRoundabout(const SUMOSAXAttributes& attrs) {
 
 
 /****************************************************************************/
-

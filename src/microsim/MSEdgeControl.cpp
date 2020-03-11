@@ -1,11 +1,15 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2019 German Aerospace Center (DLR) and others.
-// This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v2.0
-// which accompanies this distribution, and is available at
-// http://www.eclipse.org/legal/epl-v20.html
-// SPDX-License-Identifier: EPL-2.0
+// Copyright (C) 2001-2020 German Aerospace Center (DLR) and others.
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0/
+// This Source Code may also be made available under the following Secondary
+// Licenses when the conditions for such availability set forth in the Eclipse
+// Public License 2.0 are satisfied: GNU General Public License, version 2
+// or later which is available at
+// https://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html
+// SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later
 /****************************************************************************/
 /// @file    MSEdgeControl.cpp
 /// @author  Christian Roessel
@@ -13,15 +17,9 @@
 /// @author  Jakob Erdmann
 /// @author  Michael Behrisch
 /// @date    Mon, 09 Apr 2001
-/// @version $Id$
 ///
 // Stores edges and lanes, performs moving of vehicle
 /****************************************************************************/
-
-
-// ===========================================================================
-// included modules
-// ===========================================================================
 #include <config.h>
 
 #include <iostream>
@@ -35,7 +33,7 @@
 #include "MSVehicle.h"
 
 #define PARALLEL_PLAN_MOVE
-//#define PARALLEL_EXEC_MOVE
+#define PARALLEL_EXEC_MOVE
 //#define PARALLEL_CHANGE_LANES
 //#define LOAD_BALANCING
 
@@ -46,29 +44,42 @@ MSEdgeControl::MSEdgeControl(const std::vector< MSEdge* >& edges)
     : myEdges(edges),
       myLanes(MSLane::dictSize()),
       myWithVehicles2Integrate(MSGlobals::gNumSimThreads > 1),
-      myLastLaneChange(MSEdge::dictSize()) {
+      myLastLaneChange(MSEdge::dictSize()),
+      myMinLengthGeometryFactor(1.) {
     // build the usage definitions for lanes
-    for (std::vector< MSEdge* >::const_iterator i = myEdges.begin(); i != myEdges.end(); ++i) {
-        const std::vector<MSLane*>& lanes = (*i)->getLanes();
-        if (!(*i)->hasLaneChanger()) {
-            int pos = (*lanes.begin())->getNumericalID();
-            myLanes[pos].lane = *(lanes.begin());
+    for (MSEdge* const edge : myEdges) {
+        const std::vector<MSLane*>& lanes = edge->getLanes();
+        if (!edge->hasLaneChanger()) {
+            const int pos = lanes.front()->getNumericalID();
+            myLanes[pos].lane = lanes.front();
             myLanes[pos].amActive = false;
             myLanes[pos].haveNeighbors = false;
+            myMinLengthGeometryFactor = MIN2(edge->getLengthGeometryFactor(), myMinLengthGeometryFactor);
         } else {
-            for (std::vector<MSLane*>::const_iterator j = lanes.begin(); j != lanes.end(); ++j) {
-                int pos = (*j)->getNumericalID();
-                myLanes[pos].lane = *j;
+            for (MSLane* const l : lanes) {
+                const int pos = l->getNumericalID();
+                myLanes[pos].lane = l;
                 myLanes[pos].amActive = false;
                 myLanes[pos].haveNeighbors = true;
+                myMinLengthGeometryFactor = MIN2(l->getLengthGeometryFactor(), myMinLengthGeometryFactor);
             }
-            myLastLaneChange[(*i)->getNumericalID()] = -1;
+            myLastLaneChange[edge->getNumericalID()] = -1;
         }
     }
+#ifdef HAVE_FOX
+    if (MSGlobals::gNumThreads > 1) {
+        while (myThreadPool.size() < MSGlobals::gNumThreads) {
+            new WorkerThread(myThreadPool);
+        }
+    }
+#endif
 }
 
 
 MSEdgeControl::~MSEdgeControl() {
+#ifdef HAVE_FOX
+    myThreadPool.clear();
+#endif
 }
 
 
@@ -93,13 +104,6 @@ MSEdgeControl::patchActiveLanes() {
 
 void
 MSEdgeControl::planMovements(SUMOTime t) {
-#ifdef HAVE_FOX
-    if (MSGlobals::gNumSimThreads > 1) {
-        while (myThreadPool.size() < MSGlobals::gNumSimThreads) {
-            new FXWorkerThread(myThreadPool);
-        }
-    }
-#endif
 #ifdef LOAD_BALANCING
     myRNGLoad = std::priority_queue<std::pair<int, int> >();
     for (int i = 0; i < MSLane::getNumRNGs(); i++) {
@@ -194,6 +198,9 @@ MSEdgeControl::executeMovements(SUMOTime t) {
     MSNet::getInstance()->getVehicleControl().removePending();
     std::vector<MSLane*>& toIntegrate = myWithVehicles2Integrate.getContainer();
     std::sort(toIntegrate.begin(), toIntegrate.end(), ComparatorIdLess());
+    /// @todo: sorting only needed to account for lane-ordering dependencies.
+    //This should disappear when parallelization is working. Until then it would
+    //be better to use ComparatorNumericalIdLess instead of ComparatorIdLess
     myWithVehicles2Integrate.unlock();
     for (MSLane* const lane : toIntegrate) {
         const bool wasInactive = lane->getVehicleNumber() == 0;
@@ -323,4 +330,3 @@ MSEdgeControl::setAdditionalRestrictions() {
 
 
 /****************************************************************************/
-

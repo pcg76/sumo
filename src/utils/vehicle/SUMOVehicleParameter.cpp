@@ -1,27 +1,24 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2019 German Aerospace Center (DLR) and others.
-// This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v2.0
-// which accompanies this distribution, and is available at
-// http://www.eclipse.org/legal/epl-v20.html
-// SPDX-License-Identifier: EPL-2.0
+// Copyright (C) 2001-2020 German Aerospace Center (DLR) and others.
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0/
+// This Source Code may also be made available under the following Secondary
+// Licenses when the conditions for such availability set forth in the Eclipse
+// Public License 2.0 are satisfied: GNU General Public License, version 2
+// or later which is available at
+// https://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html
+// SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later
 /****************************************************************************/
 /// @file    SUMOVehicleParameter.cpp
 /// @author  Daniel Krajzewicz
 /// @author  Jakob Erdmann
 /// @author  Michael Behrisch
 /// @date    Tue, 31.03.2009
-/// @version $Id$
 ///
 // Structure representing possible vehicle parameter
 /****************************************************************************/
-
-
-// ===========================================================================
-// included modules
-// ===========================================================================
-
 #include <config.h>
 #include <utils/common/MsgHandler.h>
 #include <utils/common/StringTokenizer.h>
@@ -48,8 +45,10 @@ SUMOVehicleParameter::SUMOVehicleParameter()
       arrivalPosLat(0), arrivalPosLatProcedure(ARRIVAL_POSLAT_DEFAULT),
       arrivalSpeed(-1), arrivalSpeedProcedure(ARRIVAL_SPEED_DEFAULT),
       repetitionNumber(-1), repetitionsDone(-1), repetitionOffset(-1), repetitionProbability(-1), repetitionEnd(-1),
-      line(), fromTaz(), toTaz(), personNumber(0), containerNumber(0), parametersSet(0) {
-}
+      line(), fromTaz(), toTaz(), personNumber(0), containerNumber(0),
+      speedFactor(-1),
+      parametersSet(0)
+{ }
 
 
 SUMOVehicleParameter::~SUMOVehicleParameter() {
@@ -148,6 +147,10 @@ SUMOVehicleParameter::write(OutputDevice& dev, const OptionsCont& oc, const Sumo
     if (wasSet(VEHPARS_CONTAINER_NUMBER_SET)) {
         dev.writeAttr(SUMO_ATTR_CONTAINER_NUMBER, containerNumber);
     }
+    // individual speedFactor
+    if (wasSet(VEHPARS_SPEEDFACTOR_SET)) {
+        dev.writeAttr(SUMO_ATTR_SPEEDFACTOR, speedFactor);
+    }
 }
 
 
@@ -155,14 +158,15 @@ SUMOVehicleParameter::Stop::Stop() :
     Parameterised(),
     startPos(0),
     endPos(0),
-    duration(0),
-    until(0),
+    duration(-1),
+    until(-1),
     extension(-1),
     triggered(false),
     containerTriggered(false),
+    joinTriggered(false),
     parking(false),
     friendlyPos(false),
-    speed(0) { 
+    speed(0) {
 }
 
 
@@ -199,12 +203,7 @@ SUMOVehicleParameter::Stop::write(OutputDevice& dev) const {
     if ((parametersSet & STOP_EXTENSION_SET) && (extension >= 0)) {
         dev.writeAttr(SUMO_ATTR_EXTENSION, time2string(extension));
     }
-    if ((parametersSet & STOP_TRIGGER_SET) != 0) {
-        dev.writeAttr(SUMO_ATTR_TRIGGERED, triggered);
-    }
-    if ((parametersSet & STOP_CONTAINER_TRIGGER_SET) != 0) {
-        dev.writeAttr(SUMO_ATTR_CONTAINER_TRIGGERED, containerTriggered);
-    }
+    writeTriggers(dev);
     if ((parametersSet & STOP_PARKING_SET) != 0) {
         dev.writeAttr(SUMO_ATTR_PARKING, parking);
     }
@@ -219,6 +218,12 @@ SUMOVehicleParameter::Stop::write(OutputDevice& dev) const {
     }
     if ((parametersSet & STOP_LINE_SET) != 0) {
         dev.writeAttr(SUMO_ATTR_LINE, line);
+    }
+    if ((parametersSet & STOP_SPLIT_SET) != 0) {
+        dev.writeAttr(SUMO_ATTR_SPLIT, split);
+    }
+    if ((parametersSet & STOP_JOIN_SET) != 0) {
+        dev.writeAttr(SUMO_ATTR_JOIN, join);
     }
     if ((parametersSet & STOP_SPEED_SET) != 0) {
         dev.writeAttr(SUMO_ATTR_SPEED, speed);
@@ -242,6 +247,8 @@ SUMOVehicleParameter::parseDepart(const std::string& val, const std::string& ele
         dd = DEPART_TRIGGERED;
     } else if (val == "containerTriggered") {
         dd = DEPART_CONTAINER_TRIGGERED;
+    } else if (val == "split") {
+        dd = DEPART_SPLIT;
     } else if (val == "now") {
         // only used via TraCI. depart must be set by the calling code
         dd = DEPART_NOW;
@@ -317,6 +324,8 @@ SUMOVehicleParameter::parseDepartPos(const std::string& val, const std::string& 
         dpd = DEPART_POS_BASE;
     } else if (val == "last") {
         dpd = DEPART_POS_LAST;
+    } else if (val == "stop") {
+        dpd = DEPART_POS_STOP;
     } else {
         try {
             pos = StringUtils::toDouble(val);
@@ -546,6 +555,8 @@ SUMOVehicleParameter::parsePersonModes(const std::string& modes, const std::stri
         const std::string mode = st.next();
         if (mode == "car") {
             modeSet |= SVC_PASSENGER;
+        } else if (mode == "taxi") {
+            modeSet |= SVC_TAXI;
         } else if (mode == "bicycle") {
             modeSet |= SVC_BICYCLE;
         } else if (mode == "public") {
@@ -563,12 +574,55 @@ SUMOVehicleParameter::parsePersonModes(const std::string& modes, const std::stri
 }
 
 
+void
+SUMOVehicleParameter::parseStopTriggers(const std::vector<std::string>& triggers, bool expectTrigger, Stop& stop) {
+    if (triggers.size() == 0 && expectTrigger) {
+        stop.triggered = true;
+    }
+    for (std::string val : triggers) {
+        if (val == toString(SUMO_TAG_PERSON)) {
+            stop.triggered = true;
+        } else if (val == toString(SUMO_TAG_CONTAINER)) {
+            stop.containerTriggered = true;
+        } else if (val == toString(SUMO_ATTR_JOIN)) {
+            stop.joinTriggered = true;
+        } else {
+            try {
+                stop.triggered = StringUtils::toBool(val);
+            } catch (BoolFormatException&) {
+                WRITE_ERROR("Value of stop attribute 'trigger' must be 'person', 'container', 'join' or a boolean");
+            }
+        }
+    }
+}
+
+
+void
+SUMOVehicleParameter::Stop::writeTriggers(OutputDevice& dev) const {
+    if ((parametersSet & STOP_TRIGGER_SET) != 0) {
+        std::vector<std::string> triggers;
+        if (triggered) {
+            triggers.push_back(toString(SUMO_TAG_PERSON));
+        }
+        if (containerTriggered) {
+            triggers.push_back(toString(SUMO_TAG_CONTAINER));
+        }
+        if (joinTriggered) {
+            triggers.push_back(toString(SUMO_ATTR_JOIN));
+        }
+        dev.writeAttr(SUMO_ATTR_TRIGGERED, triggers);
+    }
+}
+
+
 std::string
 SUMOVehicleParameter::getDepart() const {
     if (departProcedure == DEPART_TRIGGERED) {
         return "triggered";
     } else if (departProcedure == DEPART_CONTAINER_TRIGGERED) {
         return "containerTriggered";
+    } else if (departProcedure == DEPART_SPLIT) {
+        return "split";
     } else {
         return time2string(depart);
     }
@@ -626,6 +680,9 @@ SUMOVehicleParameter::getDepartPos() const {
             break;
         case DEPART_POS_BASE:
             val = "base";
+            break;
+        case DEPART_POS_STOP:
+            val = "stop";
             break;
         case DEPART_POS_DEFAULT:
         default:
@@ -777,5 +834,6 @@ SUMOVehicleParameter::getArrivalSpeed() const {
     }
     return val;
 }
+
 
 /****************************************************************************/

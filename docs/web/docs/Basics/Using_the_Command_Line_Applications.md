@@ -192,7 +192,7 @@ option **--save-configuration** {{DT_FILE}}.
 Last but not least one can generate an [XML schema](https://en.wikipedia.org/wiki/XML_Schema_%28W3C%29) (using the
 option **--save-schema** {{DT_FILE}}) to validate configuration files against. For the SUMO
 application this schema should be equivalent to the one found at
-<http://sumo-sim.org/xsd/sumoConfiguration.xsd> (respectively for the
+<https://sumo.dlr.de/xsd/sumoConfiguration.xsd> (respectively for the
 other executables). Please note that the schema is more strict than the
 SUMO options parser since it only validates the verbose version given
 above.
@@ -200,6 +200,16 @@ above.
 In either case, if further information on the parameters is wanted, one
 can also pass the option **--save-commented**. Then, some further comments on each parameter
 are generated.
+
+## Environment variables in Configuration Files
+
+It is possible to refer to environment variables in configuration files. The syntax to refer to an environment variable is **${VARNAME}**. For example, your configuration file may reference a variable called **NETFILENAME**, containing the name of a network file, with the following configuration settings.
+
+    <configuration >
+        <input>
+            <net-file value="${NETFILENAME}.net.xml"/>
+        </input>
+    </configuration>
 
 # Common Options
 
@@ -325,7 +335,7 @@ the python tools. The easiest (but somewhat cumbersome) method is to run
 the tool using its full path:
 
 ```
-C:\Users\yourname>D:\path_to_somo\tools\randomTrips.py  ... arguments ...
+C:\Users\yourname>D:\path_to_sumo\tools\randomTrips.py  ... arguments ...
 ```
 
 Alternatively, you can add the directory in which the tool lies to your

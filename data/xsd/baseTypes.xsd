@@ -131,7 +131,7 @@
         <xsd:attribute name="netOffset">
             <xsd:simpleType>
                 <xsd:restriction base="xsd:string">
-                    <xsd:pattern value="&FloatPattern;,&FloatPattern;"/>
+                    <xsd:pattern value="&FloatPattern;,&FloatPattern;(,&FloatPattern;)?"/>
                 </xsd:restriction>
             </xsd:simpleType>
         </xsd:attribute>
@@ -181,6 +181,13 @@
     </xsd:complexType>
 
     <xsd:complexType name="strOptionType">
+        <xsd:attribute name="value" type="xsd:string" use="required"/>
+        <xsd:attribute name="synonymes" type="xsd:string" use="optional"/>
+        <xsd:attribute name="type" type="xsd:string" use="optional"/>
+        <xsd:attribute name="help" type="xsd:string" use="optional"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="strArrayOptionType">
         <xsd:attribute name="value" type="xsd:string" use="required"/>
         <xsd:attribute name="synonymes" type="xsd:string" use="optional"/>
         <xsd:attribute name="type" type="xsd:string" use="optional"/>
@@ -320,16 +327,16 @@
         </xsd:union>
     </xsd:simpleType>
 
-	<xsd:simpleType name="idType">
-		<xsd:restriction base="xsd:string">
-			<xsd:pattern value="[^ \t\n\r|\\;,']+"/>
-		</xsd:restriction>
-	</xsd:simpleType>
+    <xsd:simpleType name="idType">
+        <xsd:restriction base="xsd:string">
+            <xsd:pattern value="[^ \t\n\r|\\;,']+"/>
+        </xsd:restriction>
+    </xsd:simpleType>
 
-	<xsd:simpleType name="detectorIdType">
-		<xsd:restriction base="xsd:string">
-			<xsd:pattern value="[^\t\n\r|\\;,']+"/>
-		</xsd:restriction>
-	</xsd:simpleType>
+    <xsd:simpleType name="detectorIdType">
+        <xsd:restriction base="xsd:string">
+            <xsd:pattern value="[^\t\n\r|\\;,']+"/>
+        </xsd:restriction>
+    </xsd:simpleType>
 
 </xsd:schema>

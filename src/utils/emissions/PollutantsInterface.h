@@ -1,29 +1,27 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2013-2019 German Aerospace Center (DLR) and others.
-// This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v2.0
-// which accompanies this distribution, and is available at
-// http://www.eclipse.org/legal/epl-v20.html
-// SPDX-License-Identifier: EPL-2.0
+// Copyright (C) 2013-2020 German Aerospace Center (DLR) and others.
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0/
+// This Source Code may also be made available under the following Secondary
+// Licenses when the conditions for such availability set forth in the Eclipse
+// Public License 2.0 are satisfied: GNU General Public License, version 2
+// or later which is available at
+// https://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html
+// SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later
 /****************************************************************************/
 /// @file    PollutantsInterface.h
 /// @author  Daniel Krajzewicz
 /// @author  Michael Behrisch
 /// @date    Mon, 19.08.2013
-/// @version $Id$
 ///
 // Interface to capsulate different emission models
 /****************************************************************************/
-#ifndef PollutantsInterface_h
-#define PollutantsInterface_h
-
-
-// ===========================================================================
-// included modules
-// ===========================================================================
+#pragma once
 #include <config.h>
 
+#include <cctype>  // defines std::tolower
 #include <vector>
 #include <limits>
 #include <cmath>
@@ -129,7 +127,24 @@ public:
                 return myEmissionClassStrings.get(eClass);
             }
             std::string eclower = eClass;
-            std::transform(eclower.begin(), eclower.end(), eclower.begin(), tolower);
+            /*
+               For some compilers, std::tolower cannot be resolved correctly, resulting in error messages
+               like "No matching function found ... unresolved overloaded function type.", see e.g.
+               https://stackoverflow.com/questions/5539249. The problem may be fixed by specifying ::tolower,
+               the global namespace version of the function that has no overloads.
+
+               Similarly, https://en.cppreference.com/w/cpp/string/byte/tolower suggests that one should not
+               use any of the functions defined in <cctype> with standard algorithms (like `transform`) when
+               the iterator type is `char` or `signed char` -- we shall convert the value to `unsigned char`
+               first:
+
+               std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c){ return std::tolower(c); });
+
+               This, however, still generates an ugly warning in VS2017. Go figure ...
+            */
+            std::transform(eclower.begin(), eclower.end(), eclower.begin(), [](unsigned char c) {
+                return std::tolower(c);
+            });
             return myEmissionClassStrings.get(eclower);
         }
 
@@ -395,8 +410,3 @@ private:
     /// @brief get all emission classes in strin format
     static std::vector<std::string> myAllClassesStr;
 };
-
-
-#endif
-
-/****************************************************************************/

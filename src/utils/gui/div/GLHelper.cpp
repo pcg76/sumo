@@ -1,26 +1,24 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2019 German Aerospace Center (DLR) and others.
-// This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v2.0
-// which accompanies this distribution, and is available at
-// http://www.eclipse.org/legal/epl-v20.html
-// SPDX-License-Identifier: EPL-2.0
+// Copyright (C) 2001-2020 German Aerospace Center (DLR) and others.
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0/
+// This Source Code may also be made available under the following Secondary
+// Licenses when the conditions for such availability set forth in the Eclipse
+// Public License 2.0 are satisfied: GNU General Public License, version 2
+// or later which is available at
+// https://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html
+// SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later
 /****************************************************************************/
 /// @file    GLHelper.cpp
 /// @author  Daniel Krajzewicz
 /// @author  Jakob Erdmann
 /// @author  Michael Behrisch
 /// @date    Sept 2002
-/// @version $Id$
 ///
 // Some methods which help to draw certain geometrical objects in openGL
 /****************************************************************************/
-
-
-// ===========================================================================
-// included modules
-// ===========================================================================
 #include <config.h>
 
 #include <cassert>
@@ -351,20 +349,6 @@ GLHelper::drawFilledCircle(double width, int steps) {
 }
 
 
-std::vector<Position>
-GLHelper::drawFilledCircleReturnVertices(double width, int steps) {
-    drawFilledCircle(width, steps, 0, 360);
-    std::vector<Position> result;
-    const double inc = 360 / (double)steps;
-    // obtain all vertices
-    for (int i = 0; i <= steps; ++i) {
-        const std::pair<double, double>& vertex = myCircleCoords[angleLookup(i * inc)];
-        result.push_back(Position(vertex.first * width, vertex.second * width));
-    }
-    return result;
-}
-
-
 void
 GLHelper::drawFilledCircle(double width, int steps, double beg, double end) {
     if (myCircleCoords.size() == 0) {
@@ -461,7 +445,7 @@ GLHelper::drawTriangleAtEnd(const Position& p1, const Position& p2,
 void
 GLHelper::drawShapeDottedContourAroundShape(const GUIVisualizationSettings& s, const int type, const PositionVector& shape, const double width) {
     // first check that given shape isn't empty
-    if (!s.drawForSelecting && (shape.size() > 0)) {
+    if (!s.drawForRectangleSelection && !s.drawForPositionSelection && (shape.size() > 0)) {
         // build contour using shapes of first and last lane shapes
         PositionVector contourFront = shape;
         // only add an contourback if width is greather of 0
@@ -476,13 +460,13 @@ GLHelper::drawShapeDottedContourAroundShape(const GUIVisualizationSettings& s, c
             contourFront.push_back(shape.front());
         }
         // resample shape
-        PositionVector resampledShape = contourFront.resample(s.widthSettings.dottedContourSegmentLength);
+        PositionVector resampledShape = contourFront.resample(s.dottedContourSettings.segmentLength);
         // push matrix
         glPushMatrix();
         // draw contour over shape
         glTranslated(0, 0, type + 2);
         // set custom line width
-        glLineWidth((GLfloat)s.widthSettings.dottedContour);
+        glLineWidth((GLfloat)s.dottedContourSettings.segmentWidth);
         // draw contour
         drawLine(resampledShape, getDottedcontourColors((int)resampledShape.size()));
         //restore line width
@@ -494,73 +478,9 @@ GLHelper::drawShapeDottedContourAroundShape(const GUIVisualizationSettings& s, c
 
 
 void
-GLHelper::drawShapeDottedContourAroundClosedShape(const GUIVisualizationSettings& s, const int type, const PositionVector& shape) {
-    // first check that given shape isn't empty
-    if (!s.drawForSelecting && (shape.size() > 0)) {
-        // close shape
-        PositionVector closedShape = shape;
-        if (closedShape.front() != closedShape.back()) {
-            closedShape.push_back(closedShape.front());
-        }
-        // resample junction shape
-        PositionVector resampledShape = closedShape.resample(s.widthSettings.dottedContourSegmentLength);
-        // push matrix
-        glPushMatrix();
-        // draw contour over shape
-        glTranslated(0, 0, type + 0.1);
-        // set custom line width
-        glLineWidth((GLfloat)s.widthSettings.dottedContour);
-        // draw contour
-        GLHelper::drawLine(resampledShape, GLHelper::getDottedcontourColors((int)resampledShape.size()));
-        //restore line width
-        glLineWidth(1);
-        // pop matrix
-        glPopMatrix();
-    }
-}
-
-
-void
-GLHelper::drawShapeDottedContourBetweenLanes(const GUIVisualizationSettings& s, const int type, const PositionVector& frontLaneShape, const double offsetFrontLaneShape, const PositionVector& backLaneShape, const double offsetBackLaneShape) {
-    // first check that given shape isn't empty
-    if (!s.drawForSelecting && (frontLaneShape.size() > 0) && (backLaneShape.size() > 0)) {
-        // build contour using shapes of first and last lane shapes
-        PositionVector contourFront = frontLaneShape;
-        PositionVector contourback = backLaneShape;
-        if (s.lefthand) {
-            contourFront.move2side(offsetFrontLaneShape * -1);
-            contourback.move2side(offsetBackLaneShape * -1);
-        } else {
-            contourFront.move2side(offsetFrontLaneShape);
-            contourback.move2side(offsetBackLaneShape);
-        }
-        contourback = contourback.reverse();
-        for (auto i : contourback) {
-            contourFront.push_back(i);
-        }
-        contourFront.push_back(frontLaneShape.front());
-        // resample shape
-        PositionVector resampledShape = contourFront.resample(s.widthSettings.dottedContourSegmentLength);
-        // push matrix
-        glPushMatrix();
-        // draw contour over shape
-        glTranslated(0, 0, type + 2);
-        // set custom line width
-        glLineWidth((GLfloat)s.widthSettings.dottedContour);
-        // draw contour
-        GLHelper::drawLine(resampledShape, getDottedcontourColors((int)resampledShape.size()));
-        //restore line width
-        glLineWidth(1);
-        // pop matrix
-        glPopMatrix();
-    }
-}
-
-
-void
 GLHelper::drawShapeDottedContourRectangle(const GUIVisualizationSettings& s, const int type, const Position& center, const double width, const double height, const double rotation, const double offsetX, const double offsetY) {
     // first check that given width and height is valid
-    if (!s.drawForSelecting && (width > 0) && (height > 0)) {
+    if (!s.drawForRectangleSelection && !s.drawForPositionSelection && (width > 0) && (height > 0)) {
         // create shaperectangle around center
         PositionVector shape;
         shape.push_back(Position(width / 2, height / 2));
@@ -569,7 +489,7 @@ GLHelper::drawShapeDottedContourRectangle(const GUIVisualizationSettings& s, con
         shape.push_back(Position(width / 2, height / -2));
         shape.push_back(Position(width / 2, height / 2));
         // resample shape
-        shape = shape.resample(s.widthSettings.dottedContourSegmentLength);
+        shape = shape.resample(s.dottedContourSettings.segmentLength);
         // push matrix
         glPushMatrix();
         // translate to center
@@ -582,34 +502,6 @@ GLHelper::drawShapeDottedContourRectangle(const GUIVisualizationSettings& s, con
         glTranslated(offsetX, offsetY, 0);
         // draw contour
         GLHelper::drawLine(shape, getDottedcontourColors((int)shape.size()));
-        //restore line width
-        glLineWidth(1);
-        // pop matrix
-        glPopMatrix();
-    }
-}
-
-
-void
-GLHelper::drawShapeDottedContourPartialShapes(const GUIVisualizationSettings& s, const int type, const Position& begin, const Position& end, const double width) {
-    // check that both positions are valid and differents
-    if (!s.drawForSelecting && (begin != Position::INVALID) && (end != Position::INVALID) && (begin != end)) {
-        // calculate and resample shape
-        PositionVector shape{begin, end};
-        shape.move2side(width);
-        shape = shape.resample(s.widthSettings.dottedContourSegmentLength);
-        // push matrix
-        glPushMatrix();
-        // draw contour over shape
-        glTranslated(0, 0, type + 0.1);
-        // set custom line width
-        glLineWidth((GLfloat)s.widthSettings.dottedContour);
-        // draw contour
-        GLHelper::drawLine(shape, GLHelper::getDottedcontourColors((int)shape.size()));
-        // move shape to other side
-        shape.move2side(width * -2);
-        // draw contour
-        GLHelper::drawLine(shape, GLHelper::getDottedcontourColors((int)shape.size()));
         //restore line width
         glLineWidth(1);
         // pop matrix
@@ -753,24 +645,29 @@ GLHelper::drawTextBox(const std::string& text, const Position& pos,
 
 
 void
-GLHelper::drawTextAtEnd(const std::string& text, const PositionVector& shape, double x, double size, RGBColor color) {
+GLHelper::drawTextAtEnd(const std::string& text, const PositionVector& shape, double x,
+                        const GUIVisualizationTextSettings& settings, const double scale) {
     glPushMatrix();
     const Position& end = shape.back();
     const Position& f = shape[-2];
     const double rot = RAD2DEG(atan2((end.x() - f.x()), (f.y() - end.y())));
     glTranslated(end.x(), end.y(), 0);
     glRotated(rot, 0, 0, 1);
-    GLHelper::drawText(text, Position(x, 0.26), 0, .6 * size / 50, color, 180);
+    drawTextBox(text, Position(x, 0.26), 0,
+                settings.scaledSize(scale, 0.01),
+                settings.color,
+                settings.bgColor,
+                RGBColor::INVISIBLE,
+                180, 0, 0.2);
     glPopMatrix();
 }
-
 
 void
 GLHelper::drawCrossTies(const PositionVector& geom,
                         const std::vector<double>& rots,
                         const std::vector<double>& lengths,
                         double length, double spacing,
-                        double halfWidth, bool drawForSelecting) {
+                        double halfWidth, bool drawForRectangleSelection) {
     glPushMatrix();
     // draw on top of of the white area between the rails
     glTranslated(0, 0, 0.1);
@@ -780,7 +677,7 @@ GLHelper::drawCrossTies(const PositionVector& geom,
         glTranslated(geom[i].x(), geom[i].y(), 0.0);
         glRotated(rots[i], 0, 0, 1);
         // draw crossing depending if isn't being drawn for selecting
-        if (!drawForSelecting) {
+        if (!drawForRectangleSelection) {
             for (double t = 0; t < lengths[i]; t += spacing) {
                 glBegin(GL_QUADS);
                 glVertex2d(-halfWidth, -t);

@@ -1,11 +1,15 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2019 German Aerospace Center (DLR) and others.
-// This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v2.0
-// which accompanies this distribution, and is available at
-// http://www.eclipse.org/legal/epl-v20.html
-// SPDX-License-Identifier: EPL-2.0
+// Copyright (C) 2001-2020 German Aerospace Center (DLR) and others.
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0/
+// This Source Code may also be made available under the following Secondary
+// Licenses when the conditions for such availability set forth in the Eclipse
+// Public License 2.0 are satisfied: GNU General Public License, version 2
+// or later which is available at
+// https://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html
+// SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later
 /****************************************************************************/
 /// @file    NLJunctionControlBuilder.cpp
 /// @author  Daniel Krajzewicz
@@ -13,15 +17,9 @@
 /// @author  Sascha Krieg
 /// @author  Michael Behrisch
 /// @date    Mon, 9 Jul 2001
-/// @version $Id$
 ///
 // Builder of microsim-junctions and tls
 /****************************************************************************/
-
-
-// ===========================================================================
-// included modules
-// ===========================================================================
 #include <config.h>
 
 #include <map>
@@ -29,16 +27,21 @@
 #include <vector>
 #include <list>
 #include <algorithm>
+#include <utils/xml/SUMOXMLDefinitions.h>
+#include <utils/common/UtilExceptions.h>
+#include <utils/common/ToString.h>
+#include <microsim/MSGlobals.h>
+#include <microsim/MSNet.h>
 #include <microsim/MSJunctionLogic.h>
 #include <microsim/MSNoLogicJunction.h>
 #include <microsim/MSRightOfWayJunction.h>
 #include <microsim/MSInternalJunction.h>
 #include <microsim/MSJunctionControl.h>
+#include <microsim/MSEventControl.h>
 #include <microsim/traffic_lights/MSTrafficLightLogic.h>
 #include <microsim/traffic_lights/MSSimpleTrafficLightLogic.h>
 #include <microsim/traffic_lights/MSRailSignal.h>
 #include <microsim/traffic_lights/MSRailCrossing.h>
-#include <microsim/MSEventControl.h>
 #include <microsim/traffic_lights/MSSOTLPolicyBasedTrafficLightLogic.h>
 #include <microsim/traffic_lights/MSSOTLPlatoonPolicy.h>
 #include <microsim/traffic_lights/MSSOTLRequestPolicy.h>
@@ -48,15 +51,8 @@
 #include <microsim/traffic_lights/MSDeterministicHiLevelTrafficLightLogic.h>
 #include <microsim/traffic_lights/MSSOTLWaveTrafficLightLogic.h>
 #include <microsim/traffic_lights/MSDelayBasedTrafficLightLogic.h>
-#include <microsim/MSEventControl.h>
-#include <microsim/MSGlobals.h>
-#include <microsim/MSNet.h>
 #include <microsim/traffic_lights/MSOffTrafficLightLogic.h>
 #include <microsim/traffic_lights/MSTLLogicControl.h>
-#include <utils/xml/SUMOXMLDefinitions.h>
-#include <utils/common/UtilExceptions.h>
-#include <utils/common/ToString.h>
-#include <netbuild/NBNode.h>
 #include "NLBuilder.h"
 #include "NLJunctionControlBuilder.h"
 
@@ -112,33 +108,33 @@ NLJunctionControlBuilder::closeJunction(const std::string& basePath) {
     }
     MSJunction* junction = nullptr;
     switch (myType) {
-        case NODETYPE_NOJUNCTION:
-        case NODETYPE_DEAD_END:
-        case NODETYPE_DEAD_END_DEPRECATED:
-        case NODETYPE_DISTRICT:
-        case NODETYPE_TRAFFIC_LIGHT_NOJUNCTION:
+        case SumoXMLNodeType::NOJUNCTION:
+        case SumoXMLNodeType::DEAD_END:
+        case SumoXMLNodeType::DEAD_END_DEPRECATED:
+        case SumoXMLNodeType::DISTRICT:
+        case SumoXMLNodeType::TRAFFIC_LIGHT_NOJUNCTION:
             junction = buildNoLogicJunction();
             break;
-        case NODETYPE_TRAFFIC_LIGHT:
-        case NODETYPE_TRAFFIC_LIGHT_RIGHT_ON_RED:
-        case NODETYPE_RIGHT_BEFORE_LEFT:
-        case NODETYPE_PRIORITY:
-        case NODETYPE_PRIORITY_STOP:
-        case NODETYPE_ALLWAY_STOP:
-        case NODETYPE_ZIPPER:
+        case SumoXMLNodeType::TRAFFIC_LIGHT:
+        case SumoXMLNodeType::TRAFFIC_LIGHT_RIGHT_ON_RED:
+        case SumoXMLNodeType::RIGHT_BEFORE_LEFT:
+        case SumoXMLNodeType::PRIORITY:
+        case SumoXMLNodeType::PRIORITY_STOP:
+        case SumoXMLNodeType::ALLWAY_STOP:
+        case SumoXMLNodeType::ZIPPER:
             junction = buildLogicJunction();
             break;
-        case NODETYPE_INTERNAL:
+        case SumoXMLNodeType::INTERNAL:
             if (MSGlobals::gUsingInternalLanes) {
                 junction = buildInternalJunction();
             }
             break;
-        case NODETYPE_RAIL_SIGNAL:
-        case NODETYPE_RAIL_CROSSING:
+        case SumoXMLNodeType::RAIL_SIGNAL:
+        case SumoXMLNodeType::RAIL_CROSSING:
             myOffset = 0;
             myActiveKey = myActiveID;
             myActiveProgram = "0";
-            myLogicType = myType == NODETYPE_RAIL_SIGNAL ? TLTYPE_RAIL_SIGNAL : TLTYPE_RAIL_CROSSING;
+            myLogicType = myType == SumoXMLNodeType::RAIL_SIGNAL ? TLTYPE_RAIL_SIGNAL : TLTYPE_RAIL_CROSSING;
             closeTrafficLightLogic(basePath);
             junction = buildLogicJunction();
             break;
@@ -302,12 +298,12 @@ NLJunctionControlBuilder::closeTrafficLightLogic(const std::string& basePath) {
             break;
         case TLTYPE_RAIL_SIGNAL:
             tlLogic = new MSRailSignal(getTLLogicControlToUse(),
-                                       myActiveKey, myActiveProgram,
+                                       myActiveKey, myActiveProgram, myNet.getCurrentTimeStep(),
                                        myAdditionalParameter);
             break;
         case TLTYPE_RAIL_CROSSING:
             tlLogic = new MSRailCrossing(getTLLogicControlToUse(),
-                                         myActiveKey, myActiveProgram,
+                                         myActiveKey, myActiveProgram, myNet.getCurrentTimeStep(),
                                          myAdditionalParameter);
             break;
         case TLTYPE_OFF:
@@ -501,5 +497,6 @@ NLJunctionControlBuilder::retrieve(const std::string id) {
         return nullptr;
     }
 }
+
 
 /****************************************************************************/

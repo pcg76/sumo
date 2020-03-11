@@ -1,28 +1,25 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2005-2019 German Aerospace Center (DLR) and others.
-// This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v2.0
-// which accompanies this distribution, and is available at
-// http://www.eclipse.org/legal/epl-v20.html
-// SPDX-License-Identifier: EPL-2.0
+// Copyright (C) 2005-2020 German Aerospace Center (DLR) and others.
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0/
+// This Source Code may also be made available under the following Secondary
+// Licenses when the conditions for such availability set forth in the Eclipse
+// Public License 2.0 are satisfied: GNU General Public License, version 2
+// or later which is available at
+// https://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html
+// SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later
 /****************************************************************************/
 /// @file    MSCalibrator.h
 /// @author  Daniel Krajzewicz
 /// @author  Jakob Erdmann
 /// @author  Michael Behrisch
 /// @date    Tue, May 2005
-/// @version $Id$
 ///
 // Calibrates the flow on an edge by removing an inserting vehicles
 /****************************************************************************/
-#ifndef MSCalibrator_h
-#define MSCalibrator_h
-
-
-// ===========================================================================
-// included modules
-// ===========================================================================
+#pragma once
 #include <config.h>
 
 #include <string>
@@ -96,6 +93,10 @@ public:
     /// @brief cleanup remaining data structures
     static void cleanup();
 
+    /// @brief return all calibrator instances
+    static const std::set<MSCalibrator*>& getInstances() {
+        return myInstances;
+    }
 
 
 protected:
@@ -139,8 +140,8 @@ protected:
 
     class VehicleRemover : public MSMoveReminder {
     public:
-        VehicleRemover(MSLane* lane, int laneIndex, MSCalibrator* parent) :
-            MSMoveReminder(parent->getID(), lane, true), myLaneIndex(laneIndex), myParent(parent) {}
+        VehicleRemover(MSLane* lane, MSCalibrator* parent) :
+            MSMoveReminder(parent->getID(), lane, true), myParent(parent) {}
 
         /// @name inherited from MSMoveReminder
         //@{
@@ -162,10 +163,10 @@ protected:
         }
 
     private:
-        int myLaneIndex;
         MSCalibrator* myParent;
     };
     friend class VehicleRemover;
+    friend class GUICalibrator;
 
     // @return whether the current state is active (GUI)
     bool isActive() const {
@@ -247,6 +248,9 @@ protected:
      * return true if removals took place */
     bool removePending();
 
+    /// @brief determine id of new vehicle from calibrator state
+    std::string getNewVehicleID();
+
 protected:
     /// @brief the edge on which this calibrator lies
     const MSEdge* const myEdge;
@@ -256,12 +260,12 @@ protected:
     const double myPos;
     /// @brief the route probe to retrieve routes from
     const MSRouteProbe* const myProbe;
+    /// @brief dummy parent to retrieve vType filter
+    MSMeanData_Net myMeanDataParent;
     /// @brief data collector for the calibrator
     std::vector<MSMeanData_Net::MSLaneMeanDataValues*> myLaneMeanData;
     /// @brief accumlated data for the whole edge
     MSMeanData_Net::MSLaneMeanDataValues myEdgeMeanData;
-    /// @brief dummy parent to retrieve vType filter
-    MSMeanData_Net myMeanDataParent;
 
     /// @brief List of adaptation intervals
     std::vector<AspiredState> myIntervals;
@@ -301,13 +305,13 @@ protected:
     /// @brief whether the calibrator was active when last checking
     bool myAmActive;
 
+    /// @brief whether the calibrator has registered an invalid jam in the last execution step
+    bool myHaveInvalidJam;
+
     /* @brief objects which need to live longer than the MSCalibrator
      * instance which created them */
     static std::vector<MSMoveReminder*> LeftoverReminders;
     static std::vector<SUMOVehicleParameter*> LeftoverVehicleParameters;
+    static std::set<MSCalibrator*> myInstances;
 
 };
-
-#endif
-
-/****************************************************************************/

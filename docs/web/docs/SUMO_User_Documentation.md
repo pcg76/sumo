@@ -81,7 +81,7 @@ documentation, submission of code, or other results.
 - [Importing O/D Matrices](Demand/Importing_O/D_Matrices.md)
   - [Other VISUM Demand Importers](Demand/Further_Ways_to_import_VISUM_Demand_Definitions.md)
   - [Other Vissim Demand Importers](Demand/Further_Ways_to_import_Vissim_Demand_Definitions.md)
-- [Routes from Observation Points](Demand/Routes_from_Observation_Points.md)
+- [Routes from Counting Data (road counts, turn counts)](Demand/Routes_from_Observation_Points.md)
 - [Routing by Turn Probabilities](Demand/Routing_by_Turn_Probabilities.md)
 - [Activity-based Demand Generation](Demand/Activity-based_Demand_Generation.md)
 - [Random Trips](Tools/Trip.md#randomtripspy)
@@ -105,7 +105,7 @@ documentation, submission of code, or other results.
 - [Variable Speed Signs](Simulation/Variable_Speed_Signs.md)
 - [Rerouter / Alternative Route Signage](Simulation/Rerouter.md)
 - [Vaporizer](Simulation/Vaporizer.md) (deprecated, use Calibrator instead)
-- [Dynamic calibration of flow and speed](Simulation/Calibrator.md)
+- [Dynamic calibration of flow and speed and type](Simulation/Calibrator.md)
 - [Parking areas](Simulation/ParkingArea.md)
 
 ## Traffic Modes
@@ -119,12 +119,14 @@ documentation, submission of code, or other results.
 
 - [Emissions](Models/Emissions.md)
 - [Electric Vehicles](Models/Electric.md)
+- [Electric Hybrid Vehicles, overhead lines, power substations](Models/ElectricHybrid.md)
 - [Logistics](Specification/Logistics.md)
 - [Generic Parameters](Simulation/GenericParameters.md)
 - [Shapes Visualisation](Simulation/Shapes.md)
 - [Wireless Device Detection](Simulation/Bluetooth.md)
 - [Emergency Vehicles](Simulation/Emergency.md)
 - [Simple Platooning (Simpla)](Simpla.md)
+- [Demand Responsive Transport (Taxis)](Simulation/Taxi.md)
 
 ## Model details
 

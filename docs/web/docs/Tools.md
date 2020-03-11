@@ -7,7 +7,7 @@ Tools can be found in the SUMO-distribution under {{SUMO}}/tools. Most of
 them are tiny - they were written for a certain purpose and worked well
 under certain input, but may be not verified for other cases. Please
 note that we are currently restructuring the tools, see
-<http://sumo.dlr.de/trac.wsgi/ticket/1425>. Most of the tools will be
+<https://github.com/eclipse/sumo/issues/1425>. Most of the tools will be
 moved directly into the {{SUMO}}/tools dir, while obsolete scripts will
 move to {{SUMO}}/tools/purgatory.
 
@@ -17,6 +17,9 @@ The tools are divided into the following topics:
 - *[build](Tools/Build.md)* - tools used for code styling and
 by the building subsystems
 - *[detector](Tools/Detector.md)* - some tools for dealing
+with real life induction loop data
+- *[turn-data](Tools/Turns.md)* - some tools with turning counts and turning
+  ratio data
 with real life induction loop data
 - *[district](Tools/District.md)* - tools for handling traffic
 analysis zones (TAZ) aka districts
@@ -28,6 +31,8 @@ processed "natively"
     using VISUM data
   - *[vissim](Tools/Import/VISSIM.md)* - some helpers for
     using VISSIM data
+  - *[MATSim](Tools/Import/MATSim.md)* - some helpers for
+    using MATSim data
 - *[net](Tools/Net.md)* - tools for working with networks
 (mainly SUMO-networks)
 - *projects* - additional tools used by our projects

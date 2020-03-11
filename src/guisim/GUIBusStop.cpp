@@ -1,26 +1,24 @@
 /****************************************************************************/
 // Eclipse SUMO, Simulation of Urban MObility; see https://eclipse.org/sumo
-// Copyright (C) 2001-2019 German Aerospace Center (DLR) and others.
-// This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v2.0
-// which accompanies this distribution, and is available at
-// http://www.eclipse.org/legal/epl-v20.html
-// SPDX-License-Identifier: EPL-2.0
+// Copyright (C) 2001-2020 German Aerospace Center (DLR) and others.
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0/
+// This Source Code may also be made available under the following Secondary
+// Licenses when the conditions for such availability set forth in the Eclipse
+// Public License 2.0 are satisfied: GNU General Public License, version 2
+// or later which is available at
+// https://www.gnu.org/licenses/old-licenses/gpl-2.0-standalone.html
+// SPDX-License-Identifier: EPL-2.0 OR GPL-2.0-or-later
 /****************************************************************************/
 /// @file    GUIBusStop.cpp
 /// @author  Daniel Krajzewicz
 /// @author  Jakob Erdmann
 /// @author  Michael Behrisch
 /// @date    Wed, 07.12.2005
-/// @version $Id$
 ///
 // A lane area vehicles can halt at (gui-version)
 /****************************************************************************/
-
-
-// ===========================================================================
-// included modules
-// ===========================================================================
 #include <config.h>
 
 #include <string>
@@ -58,7 +56,7 @@ GUIBusStop::GUIBusStop(const std::string& id, const std::vector<std::string>& li
     MSStoppingPlace(id, lines, lane, frompos, topos, name, personCapacity),
     GUIGlObject_AbstractAdd(GLO_BUS_STOP, id),
     myPersonExaggeration(1) {
-    const double offsetSign = MSNet::getInstance()->lefthand() ? -1 : 1;
+    const double offsetSign = MSGlobals::gLefthand ? -1 : 1;
     myWidth = MAX2(1.0, ceil(personCapacity / getPersonsAbreast()) * SUMO_const_waitingPersonDepth);
     myFGShape = lane.getShape();
     myFGShape.move2side((lane.getWidth() + myWidth) * 0.45 * offsetSign);
@@ -116,7 +114,7 @@ GUIParameterTableWindow*
 GUIBusStop::getParameterWindow(GUIMainWindow& app,
                                GUISUMOAbstractView&) {
     GUIParameterTableWindow* ret =
-        new GUIParameterTableWindow(app, *this, 7);
+        new GUIParameterTableWindow(app, *this);
     // add items
     ret->mkItem("name", false, getMyName());
     ret->mkItem("begin position [m]", false, myBegPos);
@@ -137,7 +135,7 @@ GUIBusStop::drawGL(const GUIVisualizationSettings& s) const {
     glPushMatrix();
     // draw the area
     glTranslated(0, 0, getType());
-    GLHelper::setColor(s.colorSettings.busStop);
+    GLHelper::setColor(s.stoppingPlaceSettings.busStopColor);
     const double exaggeration = s.addSize.getExaggeration(s, this);
     const double offset = myWidth * 0.5 * MAX2(0.0, exaggeration - 1);
     GLHelper::drawBoxLines(myFGShape, myFGShapeRotations, myFGShapeLengths, myWidth * 0.5 * exaggeration, 0, offset);
@@ -145,7 +143,7 @@ GUIBusStop::drawGL(const GUIVisualizationSettings& s) const {
     if (s.drawDetail(s.detailSettings.stoppingPlaceDetails, exaggeration)) {
         glPushMatrix();
         // draw the lines
-        const double rotSign = MSNet::getInstance()->lefthand() ? 1 : -1;
+        const double rotSign = MSGlobals::gLefthand ? 1 : -1;
         // Iterate over every line
         for (int i = 0; i < (int)myLines.size(); ++i) {
             // push a new matrix for every line
@@ -154,7 +152,7 @@ GUIBusStop::drawGL(const GUIVisualizationSettings& s) const {
             glTranslated(myFGSignPos.x(), myFGSignPos.y(), 0);
             glRotated(rotSign * myFGSignRot, 0, 0, 1);
             // draw line
-            GLHelper::drawText(myLines[i].c_str(), Position(1.2, (double)i), .1, 1.f, s.colorSettings.busStop, 0, FONS_ALIGN_LEFT);
+            GLHelper::drawText(myLines[i].c_str(), Position(1.2, (double)i), .1, 1.f, s.stoppingPlaceSettings.busStopColor, 0, FONS_ALIGN_LEFT);
             // pop matrix for every line
             glPopMatrix();
         }
@@ -170,10 +168,10 @@ GUIBusStop::drawGL(const GUIVisualizationSettings& s) const {
         glScaled(exaggeration, exaggeration, 1);
         GLHelper::drawFilledCircle((double) 1.1, noPoints);
         glTranslated(0, 0, .1);
-        GLHelper::setColor(s.colorSettings.busStop_sign);
+        GLHelper::setColor(s.stoppingPlaceSettings.busStopColorSign);
         GLHelper::drawFilledCircle((double) 0.9, noPoints);
         if (s.drawDetail(s.detailSettings.stoppingPlaceText, exaggeration)) {
-            GLHelper::drawText("H", Position(), .1, 1.6, s.colorSettings.busStop, myFGSignRot);
+            GLHelper::drawText("H", Position(), .1, 1.6, s.stoppingPlaceSettings.busStopColor, myFGSignRot);
         }
         glPopMatrix();
     }
@@ -214,5 +212,6 @@ GUIBusStop::getWaitPosition(MSTransportable* t) const {
     }
     return result;
 }
+
 
 /****************************************************************************/
